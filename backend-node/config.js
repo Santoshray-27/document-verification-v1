@@ -9,6 +9,8 @@ module.exports = {
   port: num(process.env.PORT, 4000),
   env: process.env.NODE_ENV || 'development',
   dbPath: path.resolve(ROOT, process.env.DB_PATH || './agnitia.db'),
+  databaseUrl: process.env.DATABASE_URL,
+  useSupabase: process.env.USE_SUPABASE === 'true',
   jwtSecret: process.env.JWT_SECRET || 'agnitia-dev-secret-change-me',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '12h',
   keysDir: path.resolve(ROOT, process.env.KEYS_DIR || '../keys'),

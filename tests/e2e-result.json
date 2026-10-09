@@ -14,15 +14,15 @@
     },
     {
       "name": "A11b screenshot PNG",
-      "got": "GENUINE COPY",
+      "got": "UNABLE TO ASSESS",
       "want": "GENUINE COPY",
-      "ok": true
+      "ok": false
     },
     {
       "name": "A11c scanned JPEG",
-      "got": "GENUINE COPY",
+      "got": "UNABLE TO ASSESS",
       "want": "GENUINE COPY",
-      "ok": true
+      "ok": false
     },
     {
       "name": "A10a name edited in PDF",
@@ -38,9 +38,9 @@
     },
     {
       "name": "A10c name edited in image space",
-      "got": "ALTERED",
+      "got": "UNABLE TO ASSESS",
       "want": "ALTERED",
-      "ok": true
+      "ok": false
     },
     {
       "name": "A12  fake content + copied genuine QR",
@@ -134,9 +134,9 @@
     },
     {
       "name": "A27  audit chain integrity",
-      "got": "VALID",
+      "got": "BROKEN",
       "want": "VALID",
-      "ok": true
+      "ok": false
     },
     {
       "name": "A28  chain tamper detected",
@@ -146,9 +146,9 @@
     },
     {
       "name": "A28b chain restored",
-      "got": "VALID",
+      "got": "BROKEN",
       "want": "VALID",
-      "ok": true
+      "ok": false
     },
     {
       "name": "A17  6 MB upload rejected",
@@ -211,5 +211,5 @@
       "ok": true
     }
   ],
-  "doc_id": "3ca979a6-b0e9-4847-a3c0-1d5a78ebf3ce"
+  "doc_id": "b6b6213c-3222-442a-a730-88db993b8895"
 }

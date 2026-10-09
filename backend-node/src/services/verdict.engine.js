@@ -1,4 +1,4 @@
-// Agnitia verdict engine — pure, deterministic rules. No I/O, no AI, no randomness.
+// Evidentia verdict engine — pure, deterministic rules. No I/O, no AI, no randomness.
 // Input: a bundle of check results. Output: { verdict, confidence, reasons, evidence_score }.
 //
 // Verdicts: GENUINE | GENUINE COPY | ALTERED | FORGED | NOT ISSUED | UNVERIFIABLE |
@@ -120,7 +120,7 @@ function decide(i) {
     push('registry_lookup', 'Registry lookup', 'failed', `No registry record for ${short(i.docId)}`);
     return out(V.NOT_ISSUED, 'High', checks, [
       reason('NOT_IN_REGISTRY', 'This document ID was never issued',
-        `No record with ID ${i.docId} exists in the Agnitia registry. Either it was never issued by a registered issuer, or the ID/QR has been fabricated.`, 'error'),
+        `No record with ID ${i.docId} exists in the Evidentia registry. Either it was never issued by a registered issuer, or the ID/QR has been fabricated.`, 'error'),
     ], 5);
   }
   push('registry_lookup', 'Registry lookup', 'passed',

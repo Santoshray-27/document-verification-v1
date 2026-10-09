@@ -1,5 +1,5 @@
 /**
- * Agnitia Landing — Forensics Evidence Section
+ * Evidentia Landing — Forensics Evidence Section
  * Theme-aware (bKsEuMcK preset: stone base, amber accent, large radius).
  * Sticky two-panel with left card cycling 3 states + right stats card.
  */

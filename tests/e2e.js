@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Agnitia end-to-end scenario runner. Issues a certificate, builds the demo sample set
+// Evidentia end-to-end scenario runner. Issues a certificate, builds the demo sample set
 // (genuine / copies / altered / forged / unverifiable / revoked) and verifies each one.
 // Usage: node tests/e2e.js
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
 
-const API = process.env.API || 'http://localhost:4000';
+const API = process.env.API || 'http://127.0.0.1:4000';
 const SAMPLES = path.join(__dirname, '../samples');
 
 function req(method, urlPath, { token, json, body, headers, rawPath } = {}) {
@@ -43,7 +43,7 @@ function req(method, urlPath, { token, json, body, headers, rawPath } = {}) {
 }
 
 function multipart(fields, fileField, filename, buffer) {
-  const boundary = '----agnitia' + Math.random().toString(16).slice(2);
+  const boundary = '----evidentia' + Math.random().toString(16).slice(2);
   const parts = [];
   for (const [k, v] of Object.entries(fields)) {
     parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`));
@@ -87,7 +87,7 @@ async function main() {
     console.log(`${okFlag ? '\x1b[32m✔\x1b[0m' : '\x1b[31m✘\x1b[0m'} ${pad(name, 46)} ${COLORS[got] || ''}${pad(got, 18)}\x1b[0m expected ${want}`);
   };
 
-  console.log('\n\x1b[1m=== AGNITIA END-TO-END ===\x1b[0m\n');
+  console.log('\n\x1b[1m=== EVIDENTIA END-TO-END ===\x1b[0m\n');
 
   // ---- login ----
   const login = await req('POST', '/api/auth/login', { json: { email: 'issuer@agnitia.io', password: 'Agnitia@123' } });
@@ -314,7 +314,7 @@ async function main() {
   // Deliberately exhausting the limiter would starve every other public call in the same
   // 10-minute window, so this assertion only runs in the dedicated rate-limit pass
   // (npm run test:e2e:ratelimit), which starts the API with RATE_LIMIT_DISABLED unset.
-  if (process.env.AGNITIA_RATELIMIT_PASS === '1') {
+  if (process.env.EVIDENTIA_RATELIMIT_PASS === '1') {
     let saw429 = false;
     for (let i = 0; i < 40; i++) {
       const rr = await req('GET', `/api/public/verify/${doc.doc_id}`);

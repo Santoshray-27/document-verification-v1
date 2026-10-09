@@ -1,6 +1,6 @@
 """OCR via pytesseract + rule-based key-field parsing.
 
-The parser looks for the labelled facts block the Agnitia template prints
+The parser looks for the labelled facts block the Evidentia template prints
 (CERTIFICATE ID / DOCUMENT ID / ISSUER / ISSUE DATE) and for name/course/grade lines.
 Field extraction is advisory: Node decides the verdict, never this module.
 """

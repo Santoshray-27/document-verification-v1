@@ -24,6 +24,33 @@ import { Button } from '../../components/ui/button.jsx';
 import { Badge } from '../../components/ui/badge.jsx';
 import { Progress } from '../../components/ui/progress.jsx';
 
+function getSynthesisSummary(r) {
+  if (!r) return '';
+  if (r.ai_explanation && !r.ai_explanation.includes('unavailable')) {
+    return r.ai_explanation;
+  }
+  const verdict = r.verdict || 'UNVERIFIABLE';
+  const confidence = r.confidence_level || 'Low';
+  const issuer = r.issuer_name || 'the registered issuer';
+  const reasonsList = (r.reasons || []).map(x => x.detail || x.title).filter(Boolean);
+  const reasonsText = reasonsList.length > 0 ? ` Details: ${reasonsList.join(' ')}` : '';
+
+  if (verdict === 'GENUINE') {
+    return `This document is verified as GENUINE with ${confidence} confidence. The ECDSA P-256 digital signature matches ${issuer}'s key in the registry, the SHA-256 hash is byte-for-byte identical, and all forensic checks passed.`;
+  } else if (verdict === 'GENUINE COPY') {
+    return `This document is a GENUINE COPY with ${confidence} confidence. The text and cryptographic data match what ${issuer} signed, though minor scan/compression differences exist.`;
+  } else if (verdict === 'ALTERED') {
+    return `ATTENTION: This document has been flagged as ALTERED with ${confidence} confidence. Content or text fields differ from the original signed manifest under ${issuer}.${reasonsText}`;
+  } else if (verdict === 'FORGED') {
+    return `WARNING: This document is FORGED with ${confidence} confidence. Cryptographic signature validation failed or the document hash does not exist in ${issuer}'s registry.${reasonsText}`;
+  } else if (verdict === 'REVOKED') {
+    return `NOTICE: This document was issued by ${issuer}, but has since been REVOKED.${reasonsText}`;
+  } else if (verdict === 'EXPIRED') {
+    return `NOTICE: This document was issued by ${issuer}, but has reached its EXPIRY date and is no longer valid.`;
+  }
+  return `Verification result is ${verdict} (${confidence} confidence). Verdicts are calculated from cryptographic proofs.${reasonsText}`;
+}
+
 export default function ResultPage() {
   const { jobId } = useParams();
   const [r, setR] = useState(null);
@@ -141,6 +168,11 @@ export default function ResultPage() {
         </section>
       )}
 
+      {/* ---- VISUAL FORENSIC HEATMAP (Visual Difference Analysis) ---- */}
+      <section>
+        <HeatmapViewer visual={r.visual} snapshotUrl={r.doc_id ? `/static/snapshots/${r.doc_id}.png` : null} />
+      </section>
+
       {/* ---- EVIDENCE CHECKLIST ---- */}
       <section className="space-y-2.5">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -161,11 +193,6 @@ export default function ResultPage() {
           <FieldDiff fields={r.fields} ocrConfidence={r.ocr_confidence} />
         </section>
       )}
-
-      {/* ---- VISUAL FORENSIC HEATMAP ---- */}
-      <section>
-        <HeatmapViewer visual={r.visual} snapshotUrl={r.doc_id ? `/static/snapshots/${r.doc_id}.png` : null} />
-      </section>
 
       {/* ---- SEMANTIC CONSISTENCY CHECKS ---- */}
       {r.semantic_findings?.length > 0 && (
@@ -244,6 +271,8 @@ export default function ResultPage() {
         </section>
       )}
 
+ 
+
       {/* ---- AI ASSISTED EXPLANATION ---- */}
       <section className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 space-y-3">
         <div className="flex items-center gap-2">
@@ -253,7 +282,7 @@ export default function ResultPage() {
             Rule-Based
           </Badge>
         </div>
-        <p className="text-sm leading-relaxed text-foreground/90">{r.ai_explanation || plainLanguage(r)}</p>
+        <p className="text-sm leading-relaxed text-foreground/90">{getSynthesisSummary(r)}</p>
         <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
           <Sparkles size={13} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
           <span>
@@ -264,7 +293,7 @@ export default function ResultPage() {
 
       <p className="pb-6 text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5 print:hidden">
         <Clock size={12} />
-        Agnitia Verification Report · Immutable cryptographic proof aid
+        Evidentia Verification Report · Immutable cryptographic proof aid
       </p>
     </div>
   );
@@ -291,7 +320,7 @@ function plainLanguage(r) {
     case 'FORGED':
       return `This document was not issued by ${issuer} in this form. Either digital signature verification failed, or a genuine QR code was affixed to mismatched content. Do not accept this document.`;
     case 'NOT ISSUED':
-      return `No registry record exists for this document identifier in the Agnitia ledger. It was not issued by an accredited registered authority.`;
+      return `No registry record exists for this document identifier in the Evidentia ledger. It was not issued by an accredited registered authority.`;
     case 'UNVERIFIABLE':
       return `A record was located, but cryptographic issuer authority cannot be confirmed at this time (the issuer may be suspended or signing keys revoked).`;
     case 'REVOKED':

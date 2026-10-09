@@ -28,7 +28,7 @@ export default function IssuerDirectory() {
       <div className="mb-10 text-center">
         <h1 className="text-3xl font-bold tracking-tight text-slate-100">Trusted Issuer Directory</h1>
         <p className="mt-3 text-sm text-slate-400">
-          Only documents from these registered institutions can be verified on Agnitia.
+          Only documents from these registered institutions can be verified on Evidentia.
         </p>
       </div>
 

@@ -5,9 +5,16 @@ const jobs = require('../jobs');
 const audit = require('../services/audit.service');
 const issueSvc = require('../services/issue.service');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const crypto = require('crypto');
 
 const router = express.Router();
 router.use(requireAuth, requireRole('issuer'));
+
+router.get('/settings', (req, res) => {
+  const key = db.prepare('SELECT kid, algorithm, created_at, public_key_pem FROM issuer_keys WHERE issuer_id = ? AND status = ? ORDER BY created_at DESC LIMIT 1').get(req.user.issuer_id, 'active');
+  const fingerprint = key?.public_key_pem ? crypto.createHash('sha256').update(key.public_key_pem).digest('hex') : null;
+  res.json({ ok: true, key: key ? { ...key, fingerprint } : null });
+});
 
 /** Issuers may only ever touch their own documents. */
 function ownDoc(req, res) {
@@ -21,8 +28,8 @@ function ownDoc(req, res) {
 
 router.post('/start', (req, res, next) => {
   try {
-    const { fields, doc_type: docType, expires_at: expiresAt } = req.body || {};
-    const jobId = issueSvc.startIssueJob({ user: req.user, fields, docType, expiresAt });
+    const { fields, doc_type: docType, expires_at: expiresAt, template_id: templateId } = req.body || {};
+    const jobId = issueSvc.startIssueJob({ user: req.user, fields, docType, expiresAt, templateId });
     res.json({ ok: true, job_id: jobId });
   } catch (e) {
     if (e.code === 'VALIDATION_ERROR') return res.status(400).json({ error: { code: e.code, message: e.message } });
@@ -120,6 +127,53 @@ router.get('/dashboard', (req, res) => {
     ok: true, issuer,
     stats: { total: counts.total || 0, active: counts.active || 0, revoked: counts.revoked || 0, expired: counts.expired || 0, verifications },
     by_verdict: byVerdict, recent,
+  });
+});
+
+router.get('/reports', (req, res) => {
+  const issuerId = req.user.issuer_id;
+  const counts = db.prepare(
+    `SELECT
+       COUNT(*) AS total,
+       SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) AS active,
+       SUM(CASE WHEN status='revoked' THEN 1 ELSE 0 END) AS revoked,
+       SUM(CASE WHEN expires_at IS NOT NULL AND expires_at < datetime('now') THEN 1 ELSE 0 END) AS expired
+     FROM documents WHERE issuer_id = ?`
+  ).get(issuerId);
+
+  const verifications = db.prepare(
+    `SELECT COUNT(*) n FROM verifications WHERE doc_id IN (SELECT doc_id FROM documents WHERE issuer_id = ?)`
+  ).get(issuerId).n;
+
+  const byVerdict = db.prepare(
+    `SELECT verdict, COUNT(*) n FROM verifications
+     WHERE doc_id IN (SELECT doc_id FROM documents WHERE issuer_id = ?) GROUP BY verdict ORDER BY n DESC`
+  ).all(issuerId);
+
+  const byDocType = db.prepare(
+    `SELECT doc_type, COUNT(*) n FROM documents WHERE issuer_id = ? GROUP BY doc_type ORDER BY n DESC`
+  ).all(issuerId);
+
+  const recentVerifications = db.prepare(
+    `SELECT v.id, v.doc_id, v.verdict, v.evidence_score, v.created_at, d.fields_json
+     FROM verifications v
+     JOIN documents d ON v.doc_id = d.doc_id
+     WHERE d.issuer_id = ?
+     ORDER BY v.created_at DESC LIMIT 20`
+  ).all(issuerId).map(r => ({ ...r, fields: safeJson(r.fields_json) }));
+
+  res.json({
+    ok: true,
+    summary: {
+      total_issued: counts.total || 0,
+      active: counts.active || 0,
+      revoked: counts.revoked || 0,
+      expired: counts.expired || 0,
+      total_verifications: verifications || 0
+    },
+    by_verdict: byVerdict,
+    by_doc_type: byDocType,
+    recent_verifications: recentVerifications
   });
 });
 

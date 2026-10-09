@@ -1,4 +1,4 @@
-"""Agnitia document worker (the "muscle").
+"""Evidentia document worker (the "muscle").
 
 FastAPI, INTERNAL ONLY. It has:
   * NO database access
@@ -48,14 +48,14 @@ try:
 except Exception:
     REPORTLAB_OK = False
 
-app = FastAPI(title="Agnitia Worker", version="1.0.0", docs_url=None, redoc_url=None)
+app = FastAPI(title="Evidentia Worker", version="1.0.0", docs_url=None, redoc_url=None)
 
 
 @app.get("/health")
 def health():
     return {
         "ok": True,
-        "service": "agnitia-worker",
+        "service": "evidentia-worker",
         "version": "1.0.0",
         "tesseract": TESSERACT_OK,
         "opencv": OPENCV_OK,

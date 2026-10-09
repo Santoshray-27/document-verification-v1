@@ -1,44 +1,44 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Check, Circle, Loader2, MinusCircle, X } from 'lucide-react';
+import { AlertTriangle, Check, Circle, Loader2, MinusCircle, X, ShieldCheck } from 'lucide-react';
 import { fmtMs } from '../lib/format';
 
 const STATUS = {
   passed: {
-    color: '#10B981',
+    color: '#059669',
     Icon: Check,
-    ring: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+    ring: 'border-emerald-600 bg-emerald-50 text-emerald-800',
   },
   failed: {
-    color: '#EF4444',
+    color: '#DC2626',
     Icon: AlertTriangle,
-    ring: 'border-rose-500/40 bg-rose-500/15 text-rose-600 dark:text-rose-400',
+    ring: 'border-red-600 bg-red-50 text-red-800',
   },
   warning: {
-    color: '#F59E0B',
+    color: '#D97706',
     Icon: AlertTriangle,
-    ring: 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400',
+    ring: 'border-amber-600 bg-amber-50 text-amber-800',
   },
   skipped: {
-    color: '#94A3B8',
+    color: '#6B675C',
     Icon: MinusCircle,
-    ring: 'border-stone-400/40 bg-stone-500/10 text-stone-500 dark:text-stone-400',
+    ring: 'border-line bg-surface-2 text-ink-muted',
   },
   running: {
     color: '#F59E0B',
     Icon: Loader2,
-    ring: 'border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400',
+    ring: 'border-amber-600 bg-amber-100 text-amber-900',
   },
   queued: {
-    color: '#78716C',
+    color: '#6B675C',
     Icon: Circle,
-    ring: 'border-stone-400 dark:border-stone-600 bg-stone-100/60 dark:bg-stone-800/40 text-stone-500 dark:text-stone-400',
+    ring: 'border-line bg-surface text-ink-muted',
   },
 };
 
 /**
  * Vertical stepper with live per-step status. `steps` comes straight from the API job object.
- * `overlay` renders it as a full-screen modal (used by the issue flow).
+ * `overlay` renders it as a clean solid modal matching Evidentia's light warm paper theme.
  */
 export default function Stepper({
   steps = [],
@@ -62,30 +62,35 @@ export default function Stepper({
     <div
       className={
         overlay
-          ? 'w-full max-w-2xl overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-2xl'
-          : 'w-full rounded-2xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden'
+          ? 'w-full max-w-xl overflow-hidden border-2 border-ink bg-[#FBFAF6] text-ink shadow-[8px_8px_0_#14130F]'
+          : 'w-full border border-line bg-surface text-ink shadow-sm overflow-hidden'
       }
     >
       {(title || progress > 0) && (
-        <div className="border-b border-border px-6 py-5 bg-muted/20">
+        <div className="border-b border-line px-6 py-5 bg-[#EFEBE1]">
           <div className="flex items-start justify-between gap-4">
             <div>
-              {title && <h2 className="font-display text-lg font-semibold text-foreground tracking-tight">{title}</h2>}
-              {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
+              {title && (
+                <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-ink flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-amber-600" />
+                  {title}
+                </h2>
+              )}
+              {subtitle && <p className="mt-1 font-mono text-[11px] text-ink-muted">{subtitle}</p>}
             </div>
             {onClose && (
               <button
                 onClick={onClose}
-                className="rounded-xl p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                className="p-1 border border-line bg-surface text-ink hover:border-ink hover:text-ink transition"
                 aria-label="Close"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             )}
           </div>
-          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-secondary border border-border/40">
+          <div className="mt-4 h-2 w-full overflow-hidden border border-line bg-surface">
             <motion.div
-              className="h-full rounded-full bg-amber-500"
+              className="h-full bg-amber-500"
               animate={{ width: `${Math.max(4, progress)}%` }}
               transition={{ type: 'spring', stiffness: 140, damping: 20 }}
             />
@@ -93,7 +98,7 @@ export default function Stepper({
         </div>
       )}
 
-      <ol className="max-h-[58vh] space-y-1 overflow-y-auto px-4 py-4" aria-live="polite">
+      <ol className="max-h-[58vh] space-y-1.5 overflow-y-auto px-5 py-5 bg-[#FBFAF6]" aria-live="polite">
         {steps.map((step, i) => {
           const s = STATUS[step.status] || STATUS.queued;
           const Icon = s.Icon;
@@ -104,46 +109,47 @@ export default function Stepper({
             <li
               key={step.id}
               ref={running ? activeRef : null}
-              className={`relative flex items-start gap-3.5 rounded-xl px-3.5 py-2.5 transition-colors ${
-                running ? 'bg-amber-500/10 dark:bg-amber-500/10' : 'hover:bg-muted/40'
+              className={`relative flex items-start gap-3.5 border p-3 transition-colors ${
+                running
+                  ? 'border-amber-600 bg-amber-50/70 shadow-sm'
+                  : passed
+                  ? 'border-line/70 bg-[#FBFAF6]'
+                  : 'border-line/50 bg-[#EFEBE1]/30'
               }`}
             >
               {/* connector line */}
               {i < steps.length - 1 && (
                 <span
-                  className="absolute left-[27px] top-[40px] h-[calc(100%-24px)] w-0.5"
+                  className="absolute left-[24px] top-[42px] h-[calc(100%-20px)] w-0.5 z-0"
                   style={{
-                    background: passed
-                      ? 'rgba(16, 185, 129, 0.4)'
-                      : 'var(--border)',
+                    background: passed ? '#059669' : 'rgba(20, 19, 15, 0.2)',
                   }}
                 />
               )}
-              <span className="relative mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center">
-                {running && (
-                  <span className="absolute inset-0 rounded-full bg-amber-500/25 animate-ping opacity-75" />
-                )}
+              <span className="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center">
                 <span
-                  className={`relative flex h-7 w-7 items-center justify-center rounded-full border shadow-2xs ${s.ring}`}
+                  className={`flex h-6 w-6 items-center justify-center border font-mono ${s.ring}`}
                 >
-                  <Icon size={14} className={running ? 'animate-spin' : ''} strokeWidth={passed ? 2.8 : 2} />
+                  <Icon size={13} className={running ? 'animate-spin' : ''} strokeWidth={passed ? 3 : 2} />
                 </span>
               </span>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 z-10">
                 <div className="flex items-baseline justify-between gap-3">
                   <p
-                    className={`truncate text-sm font-medium ${
+                    className={`font-mono text-xs font-bold uppercase tracking-tight ${
                       running
-                        ? 'text-amber-800 dark:text-amber-300 font-semibold'
+                        ? 'text-amber-900'
                         : step.status === 'queued'
-                        ? 'text-stone-500 dark:text-stone-400'
-                        : 'text-foreground'
+                        ? 'text-ink-muted'
+                        : 'text-ink'
                     }`}
                   >
                     {step.label}
                   </p>
                   {step.ms !== null && step.ms !== undefined && (
-                    <span className="font-mono shrink-0 text-[11px] text-muted-foreground">{fmtMs(step.ms)}</span>
+                    <span className="font-mono shrink-0 text-[10px] text-ink-muted bg-[#EFEBE1] px-1.5 py-0.5 border border-line">
+                      {fmtMs(step.ms)}
+                    </span>
                   )}
                 </div>
                 <AnimatePresence initial={false}>
@@ -152,12 +158,10 @@ export default function Stepper({
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className={`mt-1 break-words text-xs leading-relaxed ${
+                      className={`mt-1 font-mono text-[11px] leading-relaxed break-words ${
                         step.status === 'failed'
-                          ? 'text-rose-600 dark:text-rose-400 font-medium'
-                          : step.status === 'skipped'
-                          ? 'text-muted-foreground'
-                          : 'text-muted-foreground'
+                          ? 'text-red-700 font-bold'
+                          : 'text-ink-muted'
                       }`}
                     >
                       {step.message}
@@ -171,15 +175,15 @@ export default function Stepper({
       </ol>
 
       {error && (
-        <div className="border-t border-rose-500/20 bg-rose-500/10 px-6 py-4 text-sm text-rose-700 dark:text-rose-300">
-          <p className="font-semibold flex items-center gap-1.5">
-            <AlertTriangle className="w-4 h-4" />
+        <div className="border-t border-red-300 bg-red-50 px-6 py-4 font-mono text-xs text-red-800">
+          <p className="font-bold flex items-center gap-1.5 uppercase">
+            <AlertTriangle className="w-4 h-4 text-red-600" />
             Step failed
           </p>
-          <p className="mt-0.5 text-xs text-rose-700/80 dark:text-rose-300/80 leading-relaxed">{error}</p>
+          <p className="mt-1 text-red-700 leading-relaxed">{error}</p>
         </div>
       )}
-      {footer && <div className="border-t border-border px-6 py-4 bg-muted/20">{footer}</div>}
+      {footer && <div className="border-t border-line px-6 py-4 bg-[#EFEBE1]">{footer}</div>}
     </div>
   );
 
@@ -187,7 +191,7 @@ export default function Stepper({
 
   return (
     <motion.div
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -196,10 +200,10 @@ export default function Stepper({
       aria-label={title}
     >
       <motion.div
-        initial={{ scale: 0.95, y: 12 }}
+        initial={{ scale: 0.96, y: 10 }}
         animate={{ scale: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 280, damping: 24 }}
-        className="w-full max-w-2xl"
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        className="w-full max-w-xl"
       >
         {body}
       </motion.div>

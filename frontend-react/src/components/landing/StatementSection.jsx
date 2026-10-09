@@ -1,5 +1,5 @@
 /**
- * Agnitia Landing — Statement Text Reveal
+ * Evidentia Landing — Statement Text Reveal
  * Theme-aware (bKsEuMcK preset: stone base, amber accent, large radius).
  * Words fade in word-by-word as user scrolls.
  */

@@ -1,6 +1,6 @@
-# Agnitia: Product Requirements Document (Complete)
+# Evidentia: Product Requirements Document (Complete)
 
-**Product:** Agnitia, Secure Digital Document Verification Platform (earlier placeholder name: TrustSeal)
+**Product:** Evidentia, Secure Digital Document Verification Platform (earlier placeholder name: TrustSeal)
 **Hackathon PS:** CIPHER03 | **Build window:** 24 hours | **Team:** 4 | **Version:** 3.0 (final, supersedes earlier Python-only plan)
 **Stack decision:** React (UI) + Node.js (API, crypto, verdict) + Python (forensics worker) + SQLite
 **Tagline:** *Every document carries its own proof.*
@@ -9,7 +9,7 @@
 
 ## 1. Summary
 
-Agnitia lets an **issuer** (university, company) create cryptographically signed documents and lets any **verifier or third party** check a document. The result is a **verdict, a confidence level, concrete reasons, and the location of any change**. Every step of issuing and verifying is shown **live** in the UI (loading, running, done, warning, failed).
+Evidentia lets an **issuer** (university, company) create cryptographically signed documents and lets any **verifier or third party** check a document. The result is a **verdict, a confidence level, concrete reasons, and the location of any change**. Every step of issuing and verifying is shown **live** in the UI (loading, running, done, warning, failed).
 
 Principles:
 1. **Crypto and rules decide the verdict. AI never decides.** AI only reads, hints and explains.
@@ -28,18 +28,18 @@ Certificates, IDs, invoices and contracts are shared online daily and are easy t
 
 **Non-goals:** real institutional integration; real personal data; LLM-decided verdicts; mainnet blockchain; production key custody (HSM/KMS); voice verification; proving authenticity for issuers who are not on the platform.
 
-## 4. Scope: what Agnitia can and cannot verify
+## 4. Scope: what Evidentia can and cannot verify
 
 | Document | Result |
 |---|---|
-| Issued by Agnitia, unchanged | GENUINE |
-| Issued by Agnitia, edited | ALTERED (+ where) |
-| Issued by Agnitia, screenshot/re-save, same content | GENUINE COPY |
+| Issued by Evidentia, unchanged | GENUINE |
+| Issued by Evidentia, edited | ALTERED (+ where) |
+| Issued by Evidentia, screenshot/re-save, same content | GENUINE COPY |
 | Registered issuer, no matching record, or QR/record mismatch | FORGED (NOT ISSUED) |
 | Issued then revoked / past expiry | REVOKED / EXPIRED |
 | Issuer not registered on the platform | **UNVERIFIABLE** (never called "fake"; only suspicion hints) |
 
-Agnitia cannot tell whether an arbitrary document from a non-registered issuer is real. This is the trust-anchor limitation and is stated openly.
+Evidentia cannot tell whether an arbitrary document from a non-registered issuer is real. This is the trust-anchor limitation and is stated openly.
 
 ## 5. Users
 
@@ -53,7 +53,7 @@ Agnitia cannot tell whether an arbitrary document from a non-registered issuer i
 
 ## 6. PS compliance map
 
-| PS requirement | Agnitia feature | Where | Done when |
+| PS requirement | Evidentia feature | Where | Done when |
 |---|---|---|---|
 | Issuers create protected documents | Issuer panel: form to signed PDF with QR | Node, React | Signed PDF downloads; QR scans on phone |
 | Verifiers check them | Verifier panel: upload / QR / link | Node, React | All 3 input methods work |
@@ -85,7 +85,7 @@ Priority: **P0** must (Phase 1), **P1** should (Phase 2), **P2** bonus (Phase 3)
 - **FR8 (P0)** Two signatures (see Section 9): `sig_content` (embedded in QR) and `sig_record` (registry only, covers file hash).
 - **FR9 (P0)** A PNG snapshot of the issued page (A4, 150 DPI) and field bounding boxes are stored for the heatmap.
 - **FR10 (P1)** Expiry date; revocation with reason.
-- **FR11 (P2)** Option 2: issuer uploads an existing PDF and Agnitia stamps the QR and seals it. CSV bulk issue.
+- **FR11 (P2)** Option 2: issuer uploads an existing PDF and Evidentia stamps the QR and seals it. CSV bulk issue.
 
 ### 7.3 Verification
 - **FR12 (P0)** Input by upload (PDF/PNG/JPG), camera QR scan, or Doc ID/link.

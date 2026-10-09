@@ -7,7 +7,14 @@ __pycache__/
 # secrets — NEVER commit
 keys/
 .env
+.env.local
 *.pem
+test_supabase.js
+migrate_to_supabase.js
+seed_supabase_from_dump.js
+sqlite_dump.json
+.worktrees/
+scratch/
 
 # data
 *.db

@@ -1,8 +1,8 @@
 {
-  "name": "agnitia-backend",
+  "name": "evidentia-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Agnitia - Secure Digital Document Verification Platform (Node brain: DB, auth, crypto, verdict)",
+  "description": "Evidentia - Secure Digital Document Verification Platform (Node brain: DB, auth, crypto, verdict)",
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
@@ -19,13 +19,14 @@
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^13.0.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
-    "pdfkit": "^0.15.1"
+    "pdfkit": "^0.15.1",
+    "pg": "^8.23.1"
   },
   "engines": {
     "node": ">=20"

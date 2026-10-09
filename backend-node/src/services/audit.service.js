@@ -3,7 +3,7 @@
 const db = require('../db');
 const { canonicalize, sha256Hex } = require('./crypto.service');
 
-const GENESIS = sha256Hex('AGNITIA-GENESIS');
+const GENESIS = sha256Hex('EVIDENTIA-GENESIS');
 
 function lastHash() {
   const row = db.prepare('SELECT entry_hash FROM audit_log ORDER BY id DESC LIMIT 1').get();

@@ -11,7 +11,9 @@ function sign(user) {
 
 function readToken(req) {
   const h = req.headers.authorization || '';
-  return h.startsWith('Bearer ') ? h.slice(7) : null;
+  if (h.startsWith('Bearer ')) return h.slice(7);
+  if (req.query && req.query.token) return req.query.token;
+  return null;
 }
 
 /** Required auth: 401 without a valid token. */

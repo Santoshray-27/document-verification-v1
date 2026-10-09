@@ -6,10 +6,10 @@ const ToastContext = createContext(null);
 
 const ICONS = { success: CheckCircle2, error: XCircle, warning: AlertTriangle, info: Info };
 const TOAST_STYLES = {
-  success: 'border-emerald-500/30 bg-emerald-50/95 dark:bg-emerald-950/80 text-emerald-950 dark:text-emerald-100 [&_svg]:text-emerald-600 dark:[&_svg]:text-emerald-400',
-  error: 'border-rose-500/30 bg-rose-50/95 dark:bg-rose-950/80 text-rose-950 dark:text-rose-100 [&_svg]:text-rose-600 dark:[&_svg]:text-rose-400',
-  warning: 'border-amber-500/30 bg-amber-50/95 dark:bg-amber-950/80 text-amber-950 dark:text-amber-100 [&_svg]:text-amber-600 dark:[&_svg]:text-amber-400',
-  info: 'border-stone-300 dark:border-stone-700 bg-stone-50/95 dark:bg-stone-900/90 text-stone-900 dark:text-stone-100 [&_svg]:text-amber-600 dark:[&_svg]:text-amber-400',
+  success: 'border-verdict-genuine bg-verdict-genuine-bg text-verdict-genuine',
+  error: 'border-verdict-forged bg-verdict-forged-bg text-verdict-forged',
+  warning: 'border-amber-500 bg-amber-500/10 text-amber-800',
+  info: 'border-ink bg-surface text-ink',
 };
 
 export function ToastProvider({ children }) {
@@ -54,18 +54,16 @@ export function ToastProvider({ children }) {
                 exit={{ opacity: 0, x: 30, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 340, damping: 28 }}
                 role="status"
-                className={`pointer-events-auto flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm shadow-xl ${
-                  TOAST_STYLES[t.type] || TOAST_STYLES.info
-                }`}
+                className={`pointer-events-auto flex items-start gap-3 border shadow-hard p-4 ${TOAST_STYLES[t.type] || TOAST_STYLES.info}`}
               >
-                <Icon size={18} className="mt-0.5 shrink-0" />
-                <p className="flex-1 leading-snug font-medium text-xs sm:text-sm">{t.message}</p>
+                <Icon size={16} className="mt-0.5 shrink-0" />
+                <p className="flex-1 font-mono text-[10px] uppercase font-bold tracking-widest">{t.message}</p>
                 <button
                   onClick={() => dismiss(t.id)}
                   aria-label="Dismiss"
-                  className="shrink-0 opacity-60 transition hover:opacity-100 p-0.5 rounded"
+                  className="shrink-0 opacity-50 hover:opacity-100 transition-opacity p-0.5"
                 >
-                  <X size={15} />
+                  <X size={14} />
                 </button>
               </motion.div>
             );

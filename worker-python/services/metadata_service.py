@@ -12,7 +12,7 @@ import fitz
 from PIL import Image
 import io
 
-PRODUCERS_OF_INTEREST = ("agnitia",)
+PRODUCERS_OF_INTEREST = ("evidentia",)
 EDITORS = (
     "acrobat", "adobe", "photoshop", "gimp", "libreoffice", "word", "pdf24",
     "ilovepdf", "smallpdf", "sejda", "pdfescape", "foxit", "preview", "quartz",
@@ -57,7 +57,7 @@ def pdf_metadata(data: bytes) -> dict:
             if not producer and not creator:
                 signals.append("metadata_missing")
             if producer and not any(p in producer for p in PRODUCERS_OF_INTEREST):
-                signals.append("producer_not_agnitia")
+                signals.append("producer_not_evidentia")
             if any(e in producer + " " + creator for e in EDITORS):
                 signals.append("edited_by_known_editor")
             if created and modified and modified > created:

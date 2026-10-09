@@ -1,5 +1,5 @@
 /**
- * Agnitia Landing — Hero Section
+ * Evidentia Landing — Hero Section
  * Theme-aware (bKsEuMcK preset: stone base, amber accent, large radius).
  * Clean layout with zero overlapping, rich typography, and interactive verification showcase card.
  */

@@ -1,5 +1,5 @@
 /**
- * AGNITIA LANDING PAGE COPY
+ * EVIDENTIA LANDING PAGE COPY
  * All user-facing text is centralised here.
  * Replace any line marked [PLACEHOLDER] with your real content.
  */
@@ -85,7 +85,7 @@ export const HOW_IT_WORKS = {
 };
 
 export const STATEMENT = {
-  words: 'Agnitia verifies documents with deterministic cryptography and forensic evidence — never with AI guesses.',
+  words: 'Evidentia verifies documents with deterministic cryptography and forensic evidence — never with AI guesses.',
 };
 
 export const BIG_NUMBERS = [
@@ -100,7 +100,7 @@ export const USE_CASES = [
   {
     role:  'University Registrar',
     icon:  '\uD83C\uDF93',
-    quote: 'We issue hundreds of degree certificates every semester. Agnitia lets any employer verify one in seconds — without calling us.',
+    quote: 'We issue hundreds of degree certificates every semester. Evidentia lets any employer verify one in seconds — without calling us.',
     attr:  'Registrar, sample academic institution', // [PLACEHOLDER]
   },
   {
@@ -119,7 +119,7 @@ export const USE_CASES = [
 
 export const FAQ_ITEMS = [
   {
-    q: 'How does Agnitia decide a verdict?',
+    q: 'How does Evidentia decide a verdict?',
     a: 'The verdict engine runs a deterministic pipeline: QR extraction → ECDSA signature check → registry lookup → revocation/expiry status → SHA-256 file hash → OCR field comparison → visual diff. Each check produces evidence; the engine maps that evidence to one of six verdicts by fixed rules. No model, no probability, no guessing.',
   },
   {
@@ -128,7 +128,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: 'What happens if someone screenshots or rescans a document?',
-    a: 'The file hash will differ from the registered one, but OCR + visual similarity can detect that the content is unchanged. If both signal "same", the verdict is GENUINE COPY — not ALTERED or FORGED. Most systems wrongly call screenshots tampering; Agnitia distinguishes them.',
+    a: 'The file hash will differ from the registered one, but OCR + visual similarity can detect that the content is unchanged. If both signal "same", the verdict is GENUINE COPY — not ALTERED or FORGED. Most systems wrongly call screenshots tampering; Evidentia distinguishes them.',
   },
   {
     q: 'What is the difference between ALTERED and FORGED?',
@@ -136,7 +136,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: 'Who can issue documents?',
-    a: 'Only organisations registered by an admin (university, company, etc.). An unregistered issuer returns UNVERIFIABLE — Agnitia never calls an unknown document "fake", because it simply cannot know.',
+    a: 'Only organisations registered by an admin (university, company, etc.). An unregistered issuer returns UNVERIFIABLE — Evidentia never calls an unknown document "fake", because it simply cannot know.',
   },
   {
     q: 'How is the audit trail protected?',

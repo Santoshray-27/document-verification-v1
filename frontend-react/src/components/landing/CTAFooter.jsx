@@ -1,5 +1,5 @@
 /**
- * Agnitia Landing — CTA Card + Footer
+ * Evidentia Landing — CTA Card + Footer
  * Theme-aware (bKsEuMcK preset: stone base, amber accent, large radius).
  * Warm amber/stone card with floating illustration, then clean footer.
  */
@@ -81,7 +81,7 @@ export default function CTAFooter() {
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15 text-primary border border-primary/25">
                   <ShieldCheck size={16} />
                 </div>
-                <span className="font-display font-bold text-foreground text-lg tracking-tight">Agnitia</span>
+                <span className="font-display font-bold text-foreground text-lg tracking-tight">Evidentia</span>
               </div>
               <p className="mt-2 text-xs sm:text-sm text-muted-foreground max-w-xs leading-relaxed">
                 Secure Digital Document Verification. Proof in Every Pixel.
@@ -118,7 +118,7 @@ export default function CTAFooter() {
           {/* bottom row */}
           <div className="mt-8 pt-6 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
             <p>
-              © {new Date().getFullYear()} Agnitia. Deterministic cryptographic verification.
+              © {new Date().getFullYear()} Evidentia. Deterministic cryptographic verification.
             </p>
             <div className="flex gap-5">
               <Link to="/verify" className="text-primary font-semibold hover:underline">Verify a Document</Link>

@@ -1,5 +1,5 @@
 /**
- * Agnitia Landing — Illustrations
+ * Evidentia Landing — Illustrations
  * Memoized, simplified flat-3D SVG illustrations.
  * Palette: Amber & Stone accents.
  */

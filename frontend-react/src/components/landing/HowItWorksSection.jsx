@@ -1,5 +1,5 @@
 /**
- * Agnitia Landing — How It Works
+ * Evidentia Landing — How It Works
  * Theme-aware (bKsEuMcK preset: stone base, amber accent, large radius).
  * Giant text reveal, then 3 staggered cards rise in.
  */
@@ -16,7 +16,7 @@ export default function HowItWorksSection() {
     <section
       id="how-it-works"
       className="relative py-24 md:py-32 px-4 bg-background border-t border-border/50"
-      aria-label="How Agnitia works"
+      aria-label="How Evidentia works"
     >
       <div className="max-w-5xl mx-auto">
         {/* ── Giant heading reveal ── */}

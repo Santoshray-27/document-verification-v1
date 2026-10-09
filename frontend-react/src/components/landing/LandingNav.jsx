@@ -1,5 +1,5 @@
 /**
- * Agnitia Landing — Floating Pill Navbar
+ * Evidentia Landing — Floating Pill Navbar
  * Theme-aware (bKsEuMcK preset: stone base, amber accent, large radius).
  * Features active link highlighting, scroll progress, and theme switcher (light/dark).
  */
@@ -71,7 +71,7 @@ export default function LandingNav() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary border border-primary/25">
               <ShieldCheck size={18} />
             </div>
-            <span className="font-display font-bold text-foreground text-lg tracking-tight">Agnitia</span>
+            <span className="font-display font-bold text-foreground text-lg tracking-tight">Evidentia</span>
           </button>
 
           {/* Desktop Links */}

@@ -1,5 +1,5 @@
 /**
- * Agnitia Landing — FAQ Accordion
+ * Evidentia Landing — FAQ Accordion
  * Theme-aware (bKsEuMcK preset: stone base, amber accent, large radius).
  * Smooth height animation, rotating chevron, aria-expanded.
  */

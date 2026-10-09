@@ -1,74 +1,63 @@
 import React from 'react';
-
-/** Shimmering placeholders that match the final layout, so nothing "jumps" on load. */
-function Bar({ className = '' }) {
-  return (
-    <div className={`relative overflow-hidden rounded-lg bg-muted/80 dark:bg-stone-800/80 ${className}`}>
-      <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 dark:via-white/5 to-transparent" />
-    </div>
-  );
-}
-
-export function SkeletonCard({ lines = 3, className = '' }) {
-  return (
-    <div className={`rounded-2xl border border-border bg-card p-5 shadow-xs ${className}`}>
-      <Bar className="mb-4 h-4 w-1/3" />
-      {Array.from({ length: lines }).map((_, i) => (
-        <Bar key={i} className={`mb-2.5 h-3 ${i === lines - 1 ? 'w-2/3' : 'w-full'}`} />
-      ))}
-    </div>
-  );
-}
-
-export function SkeletonStatCards({ count = 4 }) {
-  return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-border bg-card p-5 shadow-xs">
-          <Bar className="mb-3 h-3 w-20" />
-          <Bar className="h-8 w-16" />
-        </div>
-      ))}
-    </div>
-  );
-}
+import { motion } from 'framer-motion';
 
 export function SkeletonTable({ rows = 5, cols = 4 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
-      <div className="border-b border-border px-5 py-4 bg-muted/20">
-        <Bar className="h-3.5 w-32" />
+    <div className="bg-surface border border-line shadow-sm overflow-hidden w-full">
+      <div className="w-full flex bg-surface-2 border-b border-line px-4 py-3 gap-4">
+        {Array.from({ length: cols }).map((_, i) => (
+          <div key={i} className="flex-1 h-3 bg-line/50 rounded-sm" />
+        ))}
       </div>
-      {Array.from({ length: rows }).map((_, r) => (
-        <div key={r} className="flex items-center gap-4 border-b border-border/50 px-5 py-3.5 last:border-0">
-          {Array.from({ length: cols }).map((_, c) => (
-            <Bar key={c} className={`h-3 ${c === 0 ? 'w-1/4' : 'flex-1'}`} />
-          ))}
-        </div>
-      ))}
+      <div className="divide-y divide-line">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="flex px-4 py-4 gap-4 animate-pulse">
+            {Array.from({ length: cols }).map((_, j) => (
+              <div key={j} className="flex-1 h-4 bg-surface-2 rounded-sm" />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonCard({ lines = 3 }) {
+  return (
+    <div className="bg-surface border border-line p-6 shadow-sm animate-pulse space-y-4">
+      <div className="w-1/3 h-6 bg-surface-2 rounded-sm" />
+      <div className="space-y-2">
+        {Array.from({ length: lines }).map((_, i) => (
+          <div key={i} className={`h-4 bg-surface-2 rounded-sm ${i === lines - 1 ? 'w-2/3' : 'w-full'}`} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonDashboard() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="h-24 bg-surface border border-line" />
+      <div className="grid grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-32 bg-surface border border-line" />)}
+      </div>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="h-96 bg-surface border border-line" />
+        <div className="h-96 bg-surface border border-line" />
+      </div>
     </div>
   );
 }
 
 export function SkeletonResult() {
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
-      <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-xs">
-        <div className="mx-auto mb-5 h-24 w-24 rounded-full bg-muted/80 dark:bg-stone-800/80" />
-        <Bar className="mx-auto mb-3 h-7 w-52" />
-        <Bar className="mx-auto h-3.5 w-72" />
+    <div className="max-w-5xl mx-auto space-y-6 p-4 animate-pulse">
+      <div className="h-20 bg-surface border border-line" />
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="h-[500px] bg-surface border border-line" />
+        <div className="h-[500px] bg-surface border border-line" />
       </div>
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="mb-3 flex items-center gap-3">
-            <Bar className="h-5 w-5 rounded-full" />
-            <Bar className="h-3 flex-1" />
-          </div>
-        ))}
-      </div>
-      <SkeletonCard lines={4} />
     </div>
   );
 }
-
-export default Bar;

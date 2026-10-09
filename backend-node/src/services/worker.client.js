@@ -31,11 +31,23 @@ async function renderCertificate(payload) {
 
 /** multipart upload of a buffer */
 async function postFile(route, buffer, filename, extraFields = {}) {
-  const FormData = require('form-data');
-  const form = new FormData();
-  form.append('file', buffer, { filename, contentType: 'application/octet-stream' });
-  for (const [k, v] of Object.entries(extraFields)) form.append(k, String(v));
-  const { data } = await client.post(route, form, { headers: form.getHeaders() });
+  let form;
+  let headers = {};
+  
+  if (typeof globalThis.FormData !== 'undefined') {
+    const blob = new Blob([buffer]);
+    form = new FormData();
+    form.append('file', blob, filename);
+    for (const [k, v] of Object.entries(extraFields)) form.append(k, String(v));
+  } else {
+    const FormData = require('form-data');
+    form = new FormData();
+    form.append('file', buffer, { filename, contentType: 'application/octet-stream' });
+    for (const [k, v] of Object.entries(extraFields)) form.append(k, String(v));
+    headers = form.getHeaders();
+  }
+
+  const { data } = await client.post(route, form, { headers });
   return data;
 }
 

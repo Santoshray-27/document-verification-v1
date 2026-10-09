@@ -1,136 +1,43 @@
 /**
- * Agnitia Design Tokens — ported from shadcn preset 'bKsEuMcK'
- * Style: luma | Base Color: stone | Theme: amber | Radius: large (0.875rem)
- * Formatted for Tailwind 3 (space-separated RGB channels for opacity support).
+ * Evidentia Light Theme Base
+ * No dark mode permitted. 
  */
-
 :root {
-  /* Warm stone scale (Light mode) */
-  --background: 250 249 246;
-  --foreground: 28 25 23;
-  --card: 255 255 255;
-  --card-foreground: 28 25 23;
-  --popover: 255 255 255;
-  --popover-foreground: 28 25 23;
+  --bg: #F4F1EA;
+  --surface: #FBFAF6;
+  --surface-2: #EFEBE1;
+  --ink: #14130F;
+  --ink-muted: #6B675C;
+  --line: rgba(20, 19, 15, 0.14);
+  --line-strong: #14130F;
 
-  /* Primary: Amber with dark text for WCAG AA compliance */
-  --primary: 245 158 11;
-  --primary-foreground: 12 10 9;
+  --amber-500: #F59E0B;
 
-  --secondary: 245 245 244;
-  --secondary-foreground: 41 37 36;
-  --muted: 245 245 244;
-  --muted-foreground: 120 113 108;
-  --accent: 245 245 244;
-  --accent-foreground: 28 25 23;
-  --destructive: 220 38 38;
-  --destructive-foreground: 250 250 249;
-  --border: 231 229 228;
-  --input: 231 229 228;
-  --ring: 245 158 11;
-
-  /* Radius: large */
-  --radius: 0.875rem;
-
-  /* Charts */
-  --chart-1: 217 119 6;
-  --chart-2: 245 158 11;
-  --chart-3: 120 113 108;
-  --chart-4: 87 83 78;
-  --chart-5: 41 37 36;
-
-  /* Fixed Verdict Semantic Palette (Light) */
-  --verdict-genuine: #10b981;
-  --verdict-genuine-bg: #ecfdf5;
-  --verdict-genuine-border: #a7f3d0;
-  --verdict-genuine-text: #065f46;
-
-  --verdict-copy: #0d9488;
-  --verdict-copy-bg: #f0fdfa;
-  --verdict-copy-border: #99f6e4;
-  --verdict-copy-text: #115e59;
-
-  --verdict-altered: #ea580c;
-  --verdict-altered-bg: #fff7ed;
-  --verdict-altered-border: #fed7aa;
-  --verdict-altered-text: #9a3412;
-
-  --verdict-forged: #dc2626;
-  --verdict-forged-bg: #fef2f2;
-  --verdict-forged-border: #fecaca;
-  --verdict-forged-text: #991b1b;
-
-  --verdict-revoked: #7c3aed;
-  --verdict-revoked-bg: #f5f3ff;
-  --verdict-revoked-border: #ddd6fe;
-  --verdict-revoked-text: #5b21b6;
-
-  --verdict-unverifiable: #64748b;
-  --verdict-unverifiable-bg: #f8fafc;
-  --verdict-unverifiable-border: #cbd5e1;
-  --verdict-unverifiable-text: #334155;
+  --radius: 4px;
 }
 
-.dark {
-  /* Warm stone scale (Dark mode) */
-  --background: 12 10 9;
-  --foreground: 245 245 244;
-  --card: 28 25 23;
-  --card-foreground: 245 245 244;
-  --popover: 28 25 23;
-  --popover-foreground: 245 245 244;
+body {
+  background-color: var(--bg);
+  background-image: 
+    linear-gradient(to right, rgba(20,19,15,.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(20,19,15,.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+}
 
-  /* Primary: Amber with dark stone-950 text */
-  --primary: 245 158 11;
-  --primary-foreground: 12 10 9;
+/* Base noise overlay via pseudo-element */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
 
-  --secondary: 41 37 36;
-  --secondary-foreground: 245 245 244;
-  --muted: 41 37 36;
-  --muted-foreground: 168 162 158;
-  --accent: 41 37 36;
-  --accent-foreground: 245 245 244;
-  --destructive: 239 68 68;
-  --destructive-foreground: 245 245 244;
-  --border: 41 37 36;
-  --input: 41 37 36;
-  --ring: 245 158 11;
-
-  /* Charts */
-  --chart-1: 245 158 11;
-  --chart-2: 251 191 36;
-  --chart-3: 168 162 158;
-  --chart-4: 120 113 108;
-  --chart-5: 68 64 60;
-
-  /* Fixed Verdict Semantic Palette (Dark) */
-  --verdict-genuine: #34d399;
-  --verdict-genuine-bg: rgba(6, 78, 59, 0.4);
-  --verdict-genuine-border: rgba(16, 185, 129, 0.4);
-  --verdict-genuine-text: #6ee7b7;
-
-  --verdict-copy: #2dd4bf;
-  --verdict-copy-bg: rgba(19, 78, 74, 0.4);
-  --verdict-copy-border: rgba(20, 184, 166, 0.4);
-  --verdict-copy-text: #5eead4;
-
-  --verdict-altered: #fb923c;
-  --verdict-altered-bg: rgba(124, 45, 18, 0.4);
-  --verdict-altered-border: rgba(234, 88, 12, 0.4);
-  --verdict-altered-text: #fdba74;
-
-  --verdict-forged: #f87171;
-  --verdict-forged-bg: rgba(127, 29, 29, 0.4);
-  --verdict-forged-border: rgba(220, 38, 38, 0.4);
-  --verdict-forged-text: #fca5a5;
-
-  --verdict-revoked: #c4b5fd;
-  --verdict-revoked-bg: rgba(76, 29, 149, 0.4);
-  --verdict-revoked-border: rgba(124, 58, 237, 0.4);
-  --verdict-revoked-text: #ddd6fe;
-
-  --verdict-unverifiable: #94a3b8;
-  --verdict-unverifiable-bg: rgba(30, 41, 59, 0.55);
-  --verdict-unverifiable-border: rgba(71, 85, 105, 0.45);
-  --verdict-unverifiable-text: #cbd5e1;
+:focus-visible {
+  outline: 2px solid var(--amber-500);
+  outline-offset: 2px;
+  border-radius: var(--radius);
 }

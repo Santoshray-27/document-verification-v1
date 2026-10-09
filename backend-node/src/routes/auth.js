@@ -18,6 +18,14 @@ const loginLimiter = rateLimit({
   message: { error: { code: 'RATE_LIMITED', message: 'Too many login attempts — try again in a minute' } },
 });
 
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { code: 'RATE_LIMITED', message: 'Too many registration attempts — try again in 15 minutes' } },
+});
+
 router.post('/login', loginLimiter, (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
@@ -41,7 +49,7 @@ router.post('/login', loginLimiter, (req, res) => {
   });
 });
 
-router.post('/register', loginLimiter, (req, res) => {
+router.post('/register', registerLimiter, (req, res) => {
   const { name, email, password, org_type = 'university' } = req.body || {};
   if (!name || !email || !password) {
     return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Name, email, and password are required' } });
@@ -50,7 +58,7 @@ router.post('/register', loginLimiter, (req, res) => {
   
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(cleanEmail);
   if (existing) {
-    return res.status(400).json({ error: { code: 'EMAIL_IN_USE', message: 'Email is already in use' } });
+    return res.status(409).json({ error: { code: 'EMAIL_IN_USE', message: 'That email is already registered. Please log in or use a different address.' } });
   }
 
   try {
@@ -86,7 +94,11 @@ router.post('/register', loginLimiter, (req, res) => {
 });
 
 router.get('/me', requireAuth, (req, res) => {
-  res.json({ ok: true, user: req.user });
+  let issuer = null;
+  if (req.user.issuer_id) {
+    issuer = db.prepare('SELECT issuer_id, name, org_type, status, created_at FROM issuers WHERE issuer_id = ?').get(req.user.issuer_id) || null;
+  }
+  res.json({ ok: true, user: { ...req.user, issuer } });
 });
 
 module.exports = router;

@@ -15,7 +15,7 @@ function errorHandler(err, _req, res, _next) {
     : err.code === 'UNSUPPORTED_FILE_TYPE' ? 'Only PDF, PNG and JPEG files are accepted'
     : status === 500 ? 'Something went wrong on our side'
     : err.message;
-  if (status === 500) console.error('[agnitia]', err);
+  if (status === 500) console.error('[evidentia]', err);
   res.status(status).json({ error: { code, message } });
 }
 

@@ -27,10 +27,10 @@ function shortHash(h) {
 function generate({ verificationId, decision, record, issuer, ocr, metadata, diff, fileHash, durationMs }) {
   const dir = path.join(config.storageDir, 'reports');
   fs.mkdirSync(dir, { recursive: true });
-  const filename = `agnitia-report-${verificationId}.pdf`;
+  const filename = `evidentia-report-${verificationId}.pdf`;
   const full = path.join(dir, filename);
 
-  const doc = new PDFDocument({ size: 'A4', margin: 44, info: { Title: `Agnitia verification report #${verificationId}`, Author: 'Agnitia' } });
+  const doc = new PDFDocument({ size: 'A4', margin: 44, info: { Title: `Evidentia verification report #${verificationId}`, Author: 'Evidentia' } });
   const stream = fs.createWriteStream(full);
   doc.pipe(stream);
 
@@ -140,7 +140,7 @@ function generate({ verificationId, decision, record, issuer, ocr, metadata, dif
   const footY = doc.page.height - 78;
   doc.moveTo(MARGIN, footY).lineTo(MARGIN + W, footY).strokeColor('#DDE3EF').lineWidth(0.8).stroke();
   doc.fillColor(MUTED).font('Helvetica-Oblique').fontSize(7.4)
-    .text('Automated verification aid produced by Agnitia. It is not a legal certificate of authenticity. ' +
+    .text('Automated verification aid produced by Evidentia. It is not a legal certificate of authenticity. ' +
       'The verdict is produced by deterministic cryptographic checks and rules; no AI model decides it. ' +
       `Verification took ${durationMs} ms.`, 44, footY + 8, { width: W });
 

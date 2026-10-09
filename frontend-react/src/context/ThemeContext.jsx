@@ -6,7 +6,7 @@ const ThemeContext = createContext({
   setTheme: () => {},
 });
 
-const STORAGE_KEY = 'agnitia_theme';
+const STORAGE_KEY = 'evidentia_theme';
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {

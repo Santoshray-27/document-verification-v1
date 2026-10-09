@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-/** Agnitia shield mark. Pure SVG so it renders offline with no font/asset dependency. */
+/** Evidentia shield mark. Pure SVG so it renders offline with no font/asset dependency. */
 export default function Logo({ size = 34, animate = false, withWord = true, wordClass = '' }) {
   const s = size;
   return (
@@ -35,7 +35,7 @@ export default function Logo({ size = 34, animate = false, withWord = true, word
       </span>
       {withWord && (
         <span className={`font-display font-bold tracking-tight text-foreground ${wordClass}`}>
-          Agnitia
+          Evidentia
           <span className="ml-2 hidden text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 sm:inline">
             Proof in Every Pixel
           </span>

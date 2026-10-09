@@ -1,4 +1,4 @@
-// Agnitia crypto service — Node built-in `crypto` ONLY.
+// Evidentia crypto service — Node built-in `crypto` ONLY.
 // Canonical JSON + SHA-256 + ECDSA P-256 sign/verify. No custom crypto, no third-party libs.
 const crypto = require('crypto');
 const fs = require('fs');

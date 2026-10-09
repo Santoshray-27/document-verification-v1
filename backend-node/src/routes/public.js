@@ -21,7 +21,7 @@ const publicLimiter = rateLimit({
 if (String(process.env.RATE_LIMIT_DISABLED || '').toLowerCase() !== 'true') {
   router.use(publicLimiter);
 } else {
-  console.warn('[agnitia] public rate limiting DISABLED via RATE_LIMIT_DISABLED — test mode only');
+  console.warn('[evidentia] public rate limiting DISABLED via RATE_LIMIT_DISABLED — test mode only');
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -96,6 +96,17 @@ router.get('/issuers', (req, res) => {
       ORDER BY name ASC
     `).all();
     res.json({ ok: true, issuers });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'DB_ERROR', message: e.message } });
+  }
+});
+
+/** Global stats for landing page */
+router.get('/stats', (req, res) => {
+  try {
+    const documents = db.prepare('SELECT COUNT(*) n FROM documents').get().n;
+    const verifications = db.prepare('SELECT COUNT(*) n FROM verifications').get().n;
+    res.json({ ok: true, documents, verifications });
   } catch (e) {
     res.status(500).json({ error: { code: 'DB_ERROR', message: e.message } });
   }

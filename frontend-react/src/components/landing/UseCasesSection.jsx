@@ -1,5 +1,5 @@
 /**
- * Agnitia Landing — Who It's For
+ * Evidentia Landing — Who It's For
  * Theme-aware (bKsEuMcK preset: stone base, amber accent, large radius).
  * Three fanned use-case cards with clean stone & amber styling.
  */

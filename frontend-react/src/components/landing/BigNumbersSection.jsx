@@ -1,5 +1,5 @@
 /**
- * Agnitia Landing — Big Numbers List
+ * Evidentia Landing — Big Numbers List
  * Theme-aware (bKsEuMcK preset: stone base, amber accent, large radius).
  * Rows with giant numbers, dividers, and count-up on enter.
  */

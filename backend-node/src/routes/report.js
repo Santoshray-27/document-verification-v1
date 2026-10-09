@@ -18,7 +18,7 @@ router.get('/:verificationId', optionalAuth, (req, res) => {
   }
   const safe = path.resolve(path.dirname(row.report_path), path.basename(row.report_path));
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="agnitia-report-${id}.pdf"`);
+  res.setHeader('Content-Disposition', `attachment; filename="evidentia-report-${id}.pdf"`);
   fs.createReadStream(safe).pipe(res);
 });
 
