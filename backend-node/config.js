@@ -17,7 +17,7 @@ module.exports = {
   workerTimeoutMs: num(process.env.WORKER_TIMEOUT_MS, 20000),
   // URL embedded inside the QR code. MUST be publicly reachable for phone scanning.
   publicBaseUrl: (process.env.PUBLIC_BASE_URL || 'http://localhost:5173').replace(/\/$/, ''),
-  allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173')
+  allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
