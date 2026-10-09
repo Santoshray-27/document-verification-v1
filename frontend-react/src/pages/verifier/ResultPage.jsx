@@ -107,6 +107,11 @@ export default function ResultPage() {
         </section>
       )}
 
+      {/* ---- heatmap ---- */}
+      <section>
+        <HeatmapViewer visual={r.visual} snapshotUrl={r.doc_id ? `/static/snapshots/${r.doc_id}.png` : null} />
+      </section>
+
       {/* ---- evidence ---- */}
       <section>
         <h3 className="section-title mb-3">Evidence checklist — every check that ran</h3>
@@ -152,10 +157,7 @@ export default function ResultPage() {
         </section>
       )}
 
-      {/* ---- heatmap ---- */}
-      <section>
-        <HeatmapViewer visual={r.visual} snapshotUrl={r.doc_id ? `/static/snapshots/${r.doc_id}.png` : null} />
-      </section>
+
 
       {/* ---- metadata ---- */}
       {r.metadata && (
