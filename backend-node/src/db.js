@@ -94,6 +94,22 @@ CREATE INDEX IF NOT EXISTS idx_documents_issuer  ON documents(issuer_id);
 CREATE INDEX IF NOT EXISTS idx_documents_status  ON documents(status);
 CREATE INDEX IF NOT EXISTS idx_verifications_doc ON verifications(doc_id);
 CREATE INDEX IF NOT EXISTS idx_audit_doc         ON audit_log(doc_id);
+
+CREATE TABLE IF NOT EXISTS templates (
+  id             TEXT PRIMARY KEY,
+  name           TEXT NOT NULL,
+  doc_type       TEXT NOT NULL,
+  category       TEXT NOT NULL,
+  description    TEXT,
+  fields_json    TEXT NOT NULL,
+  required_json  TEXT NOT NULL,
+  org_types_json TEXT NOT NULL,
+  tags_json      TEXT NOT NULL,
+  is_system      INTEGER NOT NULL DEFAULT 1,
+  issuer_id      TEXT REFERENCES issuers(issuer_id),
+  created_at     TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_templates_org ON templates(org_types_json);
 `;
 
 function migrate() {

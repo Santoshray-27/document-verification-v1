@@ -1,13 +1,14 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, CalendarDays, Check, Copy, Download, FileText, QrCode, Sparkles } from 'lucide-react';
+import { AlertCircle, CalendarDays, Check, Copy, Download, FileText, QrCode, Sparkles, LayoutTemplate } from 'lucide-react';
 import api, { assetUrl, errMsg } from '../../api/axios';
 import Stepper from '../../components/Stepper.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { copyText, DOC_TYPES, fmtDate, shortHash } from '../../lib/format';
 
 const BLANK = {
+  template_id: 'tpl_acad_01',
   doc_type: 'academic_certificate',
   name: '',
   certificate_number: '',
@@ -32,6 +33,36 @@ export default function IssueDocument() {
   const [polling, setPolling] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+
+  const [templates, setTemplates] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.allSettled([
+      api.get('/templates'),
+      api.get('/templates/recommendations')
+    ]).then(([tplRes, recRes]) => {
+      if (!mounted) return;
+      if (tplRes.status === 'fulfilled' && tplRes.value.data.ok) {
+        setTemplates(tplRes.value.data.templates || []);
+      }
+      if (recRes.status === 'fulfilled' && recRes.value.data.ok) {
+        setRecommendations(recRes.value.data.recommendations || []);
+      }
+      setLoadingTemplates(false);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  const selectTemplate = (tpl) => {
+    setForm(f => ({
+      ...f,
+      template_id: tpl.id,
+      doc_type: tpl.doc_type
+    }));
+  };
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -120,15 +151,64 @@ export default function IssueDocument() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* -------- form -------- */}
         <form onSubmit={submit} className="glass h-fit p-6">
-          <label className="label" htmlFor="doc_type">Document type</label>
-          <select id="doc_type" className="input mb-5" value={form.doc_type} onChange={(e) => set('doc_type', e.target.value)}>
-            {DOC_TYPES.map((t) => (
-              <option key={t.id} value={t.id} className="bg-navy-800">{t.label}</option>
-            ))}
-          </select>
-          <p className="mb-5 -mt-3 text-[11px] text-slate-500">
-            Only the academic certificate template is fully built; the others reuse the same signing pipeline.
-          </p>
+          {recommendations.length > 0 && (
+            <div className="mb-6 rounded-xl border border-gold-400/20 bg-gold-400/5 p-4">
+              <div className="flex items-center gap-2 mb-2 text-gold-400 text-xs font-semibold uppercase tracking-wider">
+                <Sparkles size={14} /> Recommended for your organization
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {recommendations.slice(0, 4).map((rec) => {
+                  const isSelected = form.template_id === rec.id;
+                  return (
+                    <button
+                      key={rec.id}
+                      type="button"
+                      onClick={() => selectTemplate(rec)}
+                      className={`text-left p-2.5 rounded-lg border transition-all text-xs ${
+                        isSelected
+                          ? 'border-gold-400 bg-gold-400/15 text-white font-medium shadow-sm'
+                          : 'border-white/10 bg-navy-800/60 text-slate-300 hover:border-white/20 hover:bg-navy-800'
+                      }`}
+                    >
+                      <div className="font-semibold truncate">{rec.name}</div>
+                      <div className="text-[10px] text-slate-400 truncate mt-0.5">{rec.description}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="label mb-0" htmlFor="template_select">Active Template</label>
+              {templates.length > 0 && (
+                <span className="text-[11px] text-slate-400">
+                  {templates.find(t => t.id === form.template_id)?.category || 'General'}
+                </span>
+              )}
+            </div>
+            <select
+              id="template_select"
+              className="input mb-2"
+              value={form.template_id}
+              onChange={(e) => {
+                const tpl = templates.find((t) => t.id === e.target.value);
+                if (tpl) selectTemplate(tpl);
+              }}
+            >
+              {templates.map((t) => (
+                <option key={t.id} value={t.id} className="bg-navy-800">
+                  {t.name} ({t.category})
+                </option>
+              ))}
+            </select>
+            {templates.find(t => t.id === form.template_id)?.description && (
+              <p className="text-[11px] text-slate-400 leading-normal">
+                {templates.find(t => t.id === form.template_id).description}
+              </p>
+            )}
+          </div>
 
           <div className="space-y-4">
             {FIELDS.map((f) => (

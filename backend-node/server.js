@@ -72,6 +72,7 @@ app.use('/api/verify', require('./src/routes/verify'));
 app.use('/api/public', require('./src/routes/public'));
 app.use('/api/admin', require('./src/routes/admin'));
 app.use('/api/reports', require('./src/routes/report'));
+app.use('/api/templates', require('./src/routes/templates'));
 
 // ---- serve the built frontend (single origin for the demo: one port, one QR URL) ----
 // In dev you would use the Vite server instead; this makes the deployed/demo build work.
