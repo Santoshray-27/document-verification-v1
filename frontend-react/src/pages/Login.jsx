@@ -141,6 +141,8 @@ export default function Login() {
 
         <p className="mt-6 text-center text-xs text-slate-500">
           Just checking a document? <Link to="/verify" className="text-gold-400 underline-offset-2 hover:underline">No login needed</Link>
+          <br /><br />
+          Want to become an issuer? <Link to="/register" className="text-gold-400 underline-offset-2 hover:underline">Register your institution</Link>
         </p>
       </motion.div>
     </div>

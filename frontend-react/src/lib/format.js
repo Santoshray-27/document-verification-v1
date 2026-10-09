@@ -93,6 +93,8 @@ export function downloadBlob(blob, filename) {
 
 export const DOC_TYPES = [
   { id: 'academic_certificate', label: 'Academic Certificate' },
+  { id: 'marksheet', label: 'Marksheet / Transcript' },
+  { id: 'bonafide', label: 'Bonafide Certificate' },
   { id: 'employment_offer', label: 'Employment Offer Letter' },
   { id: 'medical_fitness', label: 'Medical Fitness Certificate' },
   { id: 'commercial_invoice', label: 'Commercial Invoice' },

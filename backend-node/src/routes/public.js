@@ -85,4 +85,20 @@ router.post('/extract-qr', (req, res, next) => {
   });
 });
 
+/** Directory of registered issuers */
+router.get('/issuers', (req, res) => {
+  try {
+    const issuers = db.prepare(`
+      SELECT issuer_id, name, org_type, status, created_at,
+             (SELECT COUNT(*) FROM documents d WHERE d.issuer_id = issuers.issuer_id) as doc_count
+      FROM issuers
+      WHERE status != 'suspended'
+      ORDER BY name ASC
+    `).all();
+    res.json({ ok: true, issuers });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'DB_ERROR', message: e.message } });
+  }
+});
+
 module.exports = router;

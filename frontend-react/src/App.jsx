@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext.jsx';
 import Layout from './components/Layout.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
 import NotFound from './pages/NotFound.jsx';
 import Dashboard from './pages/issuer/Dashboard.jsx';
 import IssueDocument from './pages/issuer/IssueDocument.jsx';
@@ -10,6 +11,7 @@ import MyDocuments from './pages/issuer/MyDocuments.jsx';
 import VerifyPage from './pages/verifier/VerifyPage.jsx';
 import ResultPage from './pages/verifier/ResultPage.jsx';
 import PublicVerify from './pages/public/PublicVerify.jsx';
+import IssuerDirectory from './pages/public/IssuerDirectory.jsx';
 import AuditLog from './pages/admin/AuditLog.jsx';
 import FullScreenLoader from './components/FullScreenLoader.jsx';
 
@@ -31,6 +33,8 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/issuers" element={<IssuerDirectory />} />
         <Route path="/verify" element={<VerifyPage />} />
         <Route path="/result/:jobId" element={<ResultPage />} />
         <Route

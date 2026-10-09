@@ -47,6 +47,14 @@ export default function Layout() {
             >
               Verify a document
             </NavLink>
+            <NavLink
+              to="/issuers"
+              className={({ isActive }) =>
+                `rounded-lg px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-white/[0.08] text-white' : 'text-slate-400 hover:bg-white/[0.05] hover:text-slate-200'}`
+              }
+            >
+              Issuer Directory
+            </NavLink>
             {links.map((l) => (
               <NavLink
                 key={l.to}
@@ -95,6 +103,9 @@ export default function Layout() {
               <div className="space-y-1 px-4 py-3">
                 <NavLink to="/verify" className="block rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/[0.06]">
                   Verify a document
+                </NavLink>
+                <NavLink to="/issuers" className="block rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/[0.06]">
+                  Issuer Directory
                 </NavLink>
                 {links.map((l) => (
                   <NavLink key={l.to} to={l.to} end={l.to === '/issuer'} className="block rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/[0.06]">
