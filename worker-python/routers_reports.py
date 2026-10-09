@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from db import query_one, query_all
 from routers_auth import get_current_user, require_role
 
-router = APIRouter(prefix="/reports", tags=["reports"])
+router = APIRouter(prefix="", tags=["reports"])
 
 def safe_json(val):
     if not val:
@@ -15,8 +15,8 @@ def safe_json(val):
     except Exception:
         return {}
 
-@router.get("")
-@router.get("/")
+@router.get("/issuer/reports")
+@router.get("/reports")
 def get_reports(user: dict = Depends(require_role("issuer"))):
     issuer_id = user["issuer_id"]
     
