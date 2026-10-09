@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrandHero, SecurityFooter } from './CertificateElements';
-import { Award, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Award, ShieldCheck, CheckCircle2, Trophy } from 'lucide-react';
 
 // ==============================================================
 // 1. STANDARD ACADEMIC CERTIFICATE (Landscape)
