@@ -13,7 +13,7 @@ The **EVIDENTIA Secure Digital Document Verification Platform** is recommended f
 | **Core Digital Signature Engine** | **READY** | Canonical JSON hashing and ECDSA P-256 signatures verified. |
 | **Certificate Templates** | **READY** | All 10 built-in templates render deterministically in ReportLab; Hackathon certificates support full multi-logo branding. |
 | **Custom Template Studio** | **READY** | Drag-and-drop field positioning, draft/publish versioning, and RBAC isolation operational. |
-| **Bulk Certificate Issuance** | **READY** | CSV and binary XLSX upload, validation, duplicate prevention, and idempotency recovery verified. |
+| **Bulk Certificate Issuance** | **READY** | Excel (.xlsx) and CSV upload, openpyxl parsing, dynamic column mapping, preview validation with zero side effects, individual PDF generation, safe ZIP packaging, and idempotency recovery verified. |
 | **Online Verification Pipeline** | **READY** | Multi-channel verification (QR code, uploaded document, and document ID) fully verified. |
 | **Deterministic Verdict Engine** | **READY** | 24-point verdict engine acts as the sole authoritative judge; AI is strictly advisory. |
 | **Audit Log Integrity** | **READY** | Tamper-evident hash chaining with automatic tamper detection verified. |
