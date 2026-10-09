@@ -1,5 +1,5 @@
+import React, { useCallback, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useCallback, useRef, useState } from 'react';
 import { FileText, Image as ImageIcon, Trash2, UploadCloud } from 'lucide-react';
 import { fmtBytes } from '../lib/format';
 
@@ -54,19 +54,29 @@ export default function UploadBox({ file, onFile, onError, disabled = false }) {
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
-        className={`relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-12 text-center transition-all
-          ${dragging ? 'border-gold-400/70 bg-gold-500/[0.07]' : 'border-white/10 bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.04]'}
+        className={`group relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-12 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2
+          ${
+            dragging
+              ? 'border-amber-500 bg-amber-500/10 scale-[1.01]'
+              : 'border-border hover:border-amber-500/50 bg-card/50 hover:bg-card'
+          }
           ${disabled ? 'pointer-events-none opacity-50' : ''}`}
       >
         <motion.span
-          animate={dragging ? { scale: 1.08, y: -3 } : { scale: 1, y: 0 }}
-          className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-gold-400/25 bg-gold-500/10 text-gold-300"
+          animate={dragging ? { scale: 1.08, y: -4 } : { scale: 1, y: 0 }}
+          className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-400 group-hover:scale-105 transition-transform"
         >
-          <UploadCloud size={26} />
+          <UploadCloud size={26} strokeWidth={2} />
         </motion.span>
-        <p className="text-base font-semibold text-white">Drop a document here</p>
-        <p className="mt-1 text-sm text-slate-400">or click to browse</p>
-        <p className="mt-3 text-xs text-slate-500">PDF, PNG or JPEG · up to {MAX_MB} MB · the file is analysed, never modified</p>
+        <p className="font-display text-base font-semibold text-foreground">
+          Drop a document here
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          or <span className="text-amber-700 dark:text-amber-400 font-medium underline underline-offset-2">browse files</span>
+        </p>
+        <p className="mt-3 text-xs text-muted-foreground">
+          PDF, PNG or JPEG · up to {MAX_MB} MB · document is analyzed cryptographically
+        </p>
         <input
           ref={inputRef}
           type="file"
@@ -78,20 +88,20 @@ export default function UploadBox({ file, onFile, onError, disabled = false }) {
 
       {file && (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3"
+          className="mt-3 flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 shadow-xs"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-navy-500/30 text-gold-300">
-            {/\.(png|jpe?g)$/i.test(file.name) ? <ImageIcon size={17} /> : <FileText size={17} />}
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400">
+            {/\.(png|jpe?g)$/i.test(file.name) ? <ImageIcon size={18} /> : <FileText size={18} />}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-slate-100">{file.name}</span>
-            <span className="mono block text-[11px] text-slate-500">{fmtBytes(file.size)}</span>
+            <span className="block truncate text-sm font-medium text-foreground">{file.name}</span>
+            <span className="font-mono block text-xs text-muted-foreground">{fmtBytes(file.size)}</span>
           </span>
           <button
             onClick={() => onFile(null)}
-            className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-500/15 hover:text-rose-300"
+            className="rounded-lg p-2 text-muted-foreground transition hover:bg-rose-500/15 hover:text-rose-600 dark:hover:text-rose-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
             aria-label="Remove file"
           >
             <Trash2 size={16} />

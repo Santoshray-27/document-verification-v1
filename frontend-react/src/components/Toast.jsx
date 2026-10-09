@@ -1,15 +1,15 @@
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 
 const ToastContext = createContext(null);
 
 const ICONS = { success: CheckCircle2, error: XCircle, warning: AlertTriangle, info: Info };
-const COLORS = {
-  success: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200',
-  error: 'border-rose-400/30 bg-rose-500/10 text-rose-200',
-  warning: 'border-amber-400/30 bg-amber-500/10 text-amber-200',
-  info: 'border-sky-400/30 bg-sky-500/10 text-sky-200',
+const TOAST_STYLES = {
+  success: 'border-emerald-500/30 bg-emerald-50/95 dark:bg-emerald-950/80 text-emerald-950 dark:text-emerald-100 [&_svg]:text-emerald-600 dark:[&_svg]:text-emerald-400',
+  error: 'border-rose-500/30 bg-rose-50/95 dark:bg-rose-950/80 text-rose-950 dark:text-rose-100 [&_svg]:text-rose-600 dark:[&_svg]:text-rose-400',
+  warning: 'border-amber-500/30 bg-amber-50/95 dark:bg-amber-950/80 text-amber-950 dark:text-amber-100 [&_svg]:text-amber-600 dark:[&_svg]:text-amber-400',
+  info: 'border-stone-300 dark:border-stone-700 bg-stone-50/95 dark:bg-stone-900/90 text-stone-900 dark:text-stone-100 [&_svg]:text-amber-600 dark:[&_svg]:text-amber-400',
 };
 
 export function ToastProvider({ children }) {
@@ -49,16 +49,22 @@ export function ToastProvider({ children }) {
               <motion.div
                 key={t.id}
                 layout
-                initial={{ opacity: 0, x: 40, scale: 0.96 }}
+                initial={{ opacity: 0, x: 30, scale: 0.95 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: 40, scale: 0.96 }}
-                transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+                exit={{ opacity: 0, x: 30, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 340, damping: 28 }}
                 role="status"
-                className={`pointer-events-auto flex items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-glass backdrop-blur-xl ${COLORS[t.type] || COLORS.info}`}
+                className={`pointer-events-auto flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm shadow-xl ${
+                  TOAST_STYLES[t.type] || TOAST_STYLES.info
+                }`}
               >
-                <Icon size={17} className="mt-0.5 shrink-0" />
-                <p className="flex-1 leading-snug">{t.message}</p>
-                <button onClick={() => dismiss(t.id)} aria-label="Dismiss" className="shrink-0 opacity-60 transition hover:opacity-100">
+                <Icon size={18} className="mt-0.5 shrink-0" />
+                <p className="flex-1 leading-snug font-medium text-xs sm:text-sm">{t.message}</p>
+                <button
+                  onClick={() => dismiss(t.id)}
+                  aria-label="Dismiss"
+                  className="shrink-0 opacity-60 transition hover:opacity-100 p-0.5 rounded"
+                >
                   <X size={15} />
                 </button>
               </motion.div>

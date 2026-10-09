@@ -1,5 +1,5 @@
+import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect } from 'react';
 import { X } from 'lucide-react';
 
 export default function Modal({ open, onClose, title, children, footer, width = 'max-w-lg' }) {
@@ -18,7 +18,7 @@ export default function Modal({ open, onClose, title, children, footer, width = 
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-navy-950/80 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -28,21 +28,29 @@ export default function Modal({ open, onClose, title, children, footer, width = 
           aria-label={title}
         >
           <motion.div
-            initial={{ scale: 0.95, y: 14, opacity: 0 }}
+            initial={{ scale: 0.95, y: 12, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.96, y: 8, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
             onClick={(e) => e.stopPropagation()}
-            className={`glass w-full ${width} overflow-hidden`}
+            className={`w-full ${width} overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-2xl`}
           >
-            <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] px-5 py-4">
-              <h2 className="text-base font-semibold text-white">{title}</h2>
-              <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white" aria-label="Close dialog">
+            <div className="flex items-center justify-between gap-4 border-b border-border px-6 py-4.5 bg-muted/20">
+              <h2 className="font-display text-base font-semibold text-foreground tracking-tight">{title}</h2>
+              <button
+                onClick={onClose}
+                className="rounded-xl p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                aria-label="Close dialog"
+              >
                 <X size={17} />
               </button>
             </div>
-            <div className="px-5 py-4">{children}</div>
-            {footer && <div className="flex justify-end gap-2.5 border-t border-white/[0.07] px-5 py-4">{footer}</div>}
+            <div className="px-6 py-5">{children}</div>
+            {footer && (
+              <div className="flex justify-end gap-2.5 border-t border-border px-6 py-4 bg-muted/20">
+                {footer}
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}

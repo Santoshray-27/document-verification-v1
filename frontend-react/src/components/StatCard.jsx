@@ -1,5 +1,5 @@
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
 
 /** Count-up number that only animates once, when the card scrolls into view. */
 function CountUp({ value, duration = 700 }) {
@@ -26,28 +26,38 @@ function CountUp({ value, duration = 700 }) {
   return <span ref={ref}>{n}</span>;
 }
 
-export default function StatCard({ label, value, icon: Icon, tone = '#D4AF37', hint }) {
+export default function StatCard({ label, value, icon: Icon, tone = '#F59E0B', hint }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.35 }}
-      className="glass card-hover relative overflow-hidden p-5"
+      transition={{ duration: 0.3 }}
+      className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-xs transition-all hover:shadow-sm"
     >
-      <span className="absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-[0.09]" style={{ background: tone }} />
+      <span
+        className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-[0.08]"
+        style={{ background: tone }}
+      />
       <div className="flex items-start justify-between">
-        <p className="section-title">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
         {Icon && (
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg border" style={{ borderColor: `${tone}33`, background: `${tone}14`, color: tone }}>
-            <Icon size={15} />
+          <span
+            className="flex h-9 w-9 items-center justify-center rounded-xl border shadow-2xs"
+            style={{
+              borderColor: `${tone}40`,
+              background: `${tone}15`,
+              color: tone,
+            }}
+          >
+            <Icon size={17} strokeWidth={2.2} />
           </span>
         )}
       </div>
-      <p className="mt-3 text-3xl font-bold tracking-tight text-white">
+      <p className="mt-3 font-display text-3xl font-bold tracking-tight text-foreground">
         <CountUp value={value} />
       </p>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+      {hint && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}
     </motion.div>
   );
 }
