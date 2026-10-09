@@ -509,10 +509,27 @@ async function processBatchAsync(batchId, user) {
 
     // Safety reconciliation: if crash occurred after document registration but before batch_row update
     const mappedData = JSON.parse(row.mapped_data_json || '{}');
-    const existingDoc = mappedData.certificate_number ? db.prepare(`
-      SELECT doc_id, pdf_path FROM documents
-      WHERE issuer_id = ? AND fields_json LIKE ? AND status = 'active'
-    `).get(batch.issuer_id, `%"certificate_number":"${mappedData.certificate_number}"%`) : null;
+    let existingDoc = null;
+    if (mappedData.certificate_number) {
+      const candidates = db.prepare(`
+        SELECT doc_id, fields_json, pdf_path FROM documents
+        WHERE issuer_id = ? AND status = 'active'
+        ORDER BY created_at DESC LIMIT 50
+      `).all(batch.issuer_id);
+
+      for (const cand of candidates) {
+        try {
+          const parsed = JSON.parse(cand.fields_json || '{}');
+          if (
+            parsed.certificate_number === mappedData.certificate_number &&
+            (!mappedData.name || parsed.name === mappedData.name)
+          ) {
+            existingDoc = cand;
+            break;
+          }
+        } catch {}
+      }
+    }
 
     if (existingDoc && existingDoc.pdf_path && fs.existsSync(existingDoc.pdf_path)) {
       db.prepare(`
