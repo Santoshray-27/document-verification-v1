@@ -193,7 +193,8 @@ async def bulk_validate(
             cert_nos.add(cert_num)
 
         status_val = "valid" if len(row_errors) == 0 else "invalid"
-        if status_val == "valid":
+        is_val = len(row_errors) == 0
+        if is_val:
             valid_count += 1
         else:
             invalid_count += 1
@@ -203,6 +204,7 @@ async def bulk_validate(
             "raw_data": raw_dict,
             "mapped_data": mapped_dict,
             "validation_status": status_val,
+            "is_valid": is_val,
             "errors": row_errors,
         })
 
@@ -218,16 +220,29 @@ async def bulk_validate(
         (batch_id, user["issuer_id"], template_id, tpl.get("version") or 1, len(data_rows), valid_count, json.dumps(active_mapping), user["id"], now_str)
     )
 
-    for vr in validated_rows:
-        execute(
-            """
-            INSERT INTO batch_rows (id, batch_id, row_number, raw_data_json, mapped_data_json,
-                                    validation_status, validation_errors_json, status, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending', %s)
-            """,
-            (str(uuid.uuid4()), batch_id, vr["row_number"], json.dumps(vr["raw_data"]), json.dumps(vr["mapped_data"]),
-             vr["validation_status"], json.dumps(vr["errors"]), now_str)
+    from db import execute_batch_values
+    batch_rows_records = [
+        (
+            str(uuid.uuid4()),
+            batch_id,
+            vr["row_number"],
+            json.dumps(vr["raw_data"]),
+            json.dumps(vr["mapped_data"]),
+            vr["validation_status"],
+            json.dumps(vr["errors"]),
+            "pending",
+            now_str,
         )
+        for vr in validated_rows
+    ]
+    execute_batch_values(
+        """
+        INSERT INTO batch_rows (id, batch_id, row_number, raw_data_json, mapped_data_json,
+                                validation_status, validation_errors_json, status, created_at)
+        VALUES %s
+        """,
+        batch_rows_records
+    )
 
     return {
         "ok": True,
@@ -262,6 +277,18 @@ def bulk_start(payload: dict, user: dict = Depends(require_role("issuer"))):
     batch = query_one("SELECT * FROM batch_jobs WHERE id = %s AND issuer_id = %s", (batch_id, user["issuer_id"]))
     if not batch:
         raise HTTPException(status_code=404, detail={"code": "BATCH_NOT_FOUND", "message": "Batch not found"})
+
+    # Pre-fetch issuer and signing key once for the entire batch (massively reduces DB latency)
+    issuer = query_one("SELECT * FROM issuers WHERE issuer_id = %s", (user["issuer_id"],))
+    if not issuer:
+        raise HTTPException(status_code=400, detail={"code": "ISSUER_NOT_FOUND", "message": "Issuer not found"})
+        
+    key = query_one(
+        "SELECT * FROM issuer_keys WHERE issuer_id = %s AND status = 'active' ORDER BY created_at DESC LIMIT 1",
+        (issuer["issuer_id"],)
+    )
+    if not key:
+        raise HTTPException(status_code=400, detail={"code": "KEY_NOT_FOUND", "message": "Issuer has no active signing key"})
 
     # Process all valid rows in-process
     valid_rows = query_all("SELECT * FROM batch_rows WHERE batch_id = %s AND validation_status = 'valid'", (batch_id,)) or []

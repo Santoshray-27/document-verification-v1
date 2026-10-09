@@ -509,7 +509,7 @@ export default function BulkIssuance() {
                     <tr key={row.row_number} className="hover:bg-surface-2 transition">
                       <td className="px-3 py-2 font-mono text-ink-muted">{row.row_number}</td>
                       <td className="px-3 py-2">
-                        {row.is_valid ? (
+                        {(row.is_valid || row.validation_status === 'valid') ? (
                           <span className="inline-flex items-center gap-1 border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-emerald-800">
                             <CheckCircle2 size={11} /> Valid
                           </span>
