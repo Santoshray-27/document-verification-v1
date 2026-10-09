@@ -68,7 +68,6 @@ export default function Dashboard() {
       </motion.div>
 
       <div className="relative">
-        <SampleDataOverlay />
 
         {/* ROW 2: PIPELINE & LOG */}
         <motion.div variants={item} className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8">
@@ -187,14 +186,9 @@ function StatPanel({ label, dataKey, tone, fallbackSpark }) {
     rose: 'text-verdict-forged'
   };
 
-  const isEmpty = (data?.stats?.total ?? 0) === 0;
-  
-  // Use mock values if empty or loading/error so layout doesn't break
-  const MOCK_VALS = { total: 55, active: 48, revoked: 4, verifications: 273 };
-  let value = MOCK_VALS[dataKey];
-  if (data && !isEmpty && data.stats) {
-    value = data.stats[dataKey] || 0;
-  }
+  const stats = data?.stats || {};
+  const value = stats[dataKey] !== undefined ? stats[dataKey] : 0;
+  const isZero = value === 0;
 
   return (
     <div className="group border border-line bg-surface p-5 flex flex-col justify-between h-32 rounded-sm transition-all duration-300 hover:shadow-hard hover:-translate-y-1 hover:-rotate-1 relative overflow-hidden">
@@ -206,13 +200,13 @@ function StatPanel({ label, dataKey, tone, fallbackSpark }) {
           {isError && <AlertCircle size={10} className="text-red-500" />}
         </span>
         <div className="flex items-end gap-0.5 h-8 opacity-40 group-hover:opacity-100 transition-opacity">
-          {fallbackSpark.map((val, i) => (
-            <div key={i} className={`w-1.5 bg-current ${tones[tone]}`} style={{ height: `${(val / Math.max(...fallbackSpark)) * 100}%` }} />
+          {(isZero ? [0, 0, 0, 0, 0, 0, 0] : fallbackSpark).map((val, i) => (
+            <div key={i} className={`w-1.5 bg-current ${tones[tone]}`} style={{ height: `${Math.max(10, (val / Math.max(...fallbackSpark)) * 100)}%` }} />
           ))}
         </div>
       </div>
       <div className={`relative z-10 font-display text-4xl sm:text-5xl tracking-tighter ${tones[tone]}`}>
-        {isLoading ? <span className="opacity-50">...</span> : value}
+        {isLoading ? <span className="opacity-50 text-2xl font-mono">...</span> : value}
       </div>
     </div>
   );
@@ -220,9 +214,7 @@ function StatPanel({ label, dataKey, tone, fallbackSpark }) {
 
 function RecentLedger() {
   const { data, isLoading, isError } = useDashboard();
-  const isEmpty = (data?.stats?.total ?? 0) === 0;
-  
-  const docs = (!isEmpty && data?.recent) ? data.recent : MOCK_DOCS;
+  const docs = data?.recent || [];
 
   return (
     <div className="xl:col-span-8 border border-line bg-surface rounded-sm shadow-sm">
@@ -246,22 +238,28 @@ function RecentLedger() {
           <tbody>
             {isError ? (
               <tr><td colSpan={4} className="px-4 py-8 text-center text-red-500">Failed to load recent documents.</td></tr>
-            ) : docs.map((d, i) => (
+            ) : docs.length > 0 ? docs.map((d, i) => (
               <tr key={i} className="border-b border-line/50 hover:bg-surface-2/30 transition-colors">
                 <td className="px-4 py-3 text-ink font-sans text-xs">{d.fields?.name || d.name}</td>
                 <td className="px-4 py-3 text-ink-muted">
                   <span className="bg-surface-2 px-1.5 py-0.5 rounded-sm border border-line cursor-copy">{d.fields?.certificate_number || d.cert_id || d.doc_id}</span>
                 </td>
-                <td className="px-4 py-3 text-ink-muted">{d.issued_at ? fmtDate(d.issued_at) : '2026-10-09'}</td>
+                <td className="px-4 py-3 text-ink-muted">{d.issued_at ? fmtDate(d.issued_at) : '—'}</td>
                 <td className="px-4 py-3 text-right">
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded-sm text-[9px] uppercase tracking-wider ${d.status === 'active' ? 'bg-verdict-genuine-bg text-verdict-genuine-text border border-verdict-genuine-border' : 'bg-verdict-revoked-bg text-verdict-revoked-text border border-verdict-revoked-border'}`}>
                     {d.status}
                   </span>
                 </td>
               </tr>
-            ))}
-            {docs.length === 0 && !isEmpty && !isLoading && (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-ink-muted">No documents found.</td></tr>
+            )) : (
+              <tr>
+                <td colSpan={4} className="px-4 py-12 text-center text-ink-muted">
+                  <p className="font-mono text-xs">No credentials issued yet.</p>
+                  <Link to="/issuer/issue" className="inline-block mt-2 font-mono text-[10px] text-amber-700 bg-amber-500/10 px-3 py-1 border border-amber-500/30 font-bold hover:bg-amber-500/20">
+                    + ISSUE YOUR FIRST CERTIFICATE
+                  </Link>
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
