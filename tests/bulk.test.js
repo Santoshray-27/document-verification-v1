@@ -17,18 +17,6 @@ test.before(() => {
   const now = new Date().toISOString();
   db.prepare("INSERT OR IGNORE INTO issuers (issuer_id, name, org_type, status, created_at) VALUES (?, ?, 'university', 'active', ?)").run(TEST_ISSUER_1, 'Bulk Test University', now);
   db.prepare("INSERT OR IGNORE INTO issuers (issuer_id, name, org_type, status, created_at) VALUES (?, ?, 'company', 'active', ?)").run(TEST_ISSUER_2, 'Unauthorized Corp', now);
-
-  // Seed signing keys for TEST_ISSUER_1 if not exists
-  const keyExists = db.prepare('SELECT kid FROM issuer_keys WHERE issuer_id = ?').get(TEST_ISSUER_1);
-  if (!keyExists) {
-    const demoKey = db.prepare('SELECT * FROM issuer_keys LIMIT 1').get();
-    if (demoKey) {
-      db.prepare(`
-        INSERT INTO issuer_keys (kid, issuer_id, public_key_pem, private_key_path, algorithm, status, created_at)
-        VALUES (?, ?, ?, ?, ?, 'active', ?)
-      `).run('kid_bulk_test_1', TEST_ISSUER_1, demoKey.public_key_pem, demoKey.private_key_path, demoKey.algorithm, now);
-    }
-  }
 });
 
 test('Bulk CSV parser parses simple, quoted, and multiline values', () => {

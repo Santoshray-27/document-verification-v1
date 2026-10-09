@@ -507,11 +507,33 @@ async function processBatchAsync(batchId, user) {
       continue;
     }
 
+    // Safety reconciliation: if crash occurred after document registration but before batch_row update
+    const mappedData = JSON.parse(row.mapped_data_json || '{}');
+    const existingDoc = mappedData.certificate_number ? db.prepare(`
+      SELECT doc_id, pdf_path FROM documents
+      WHERE issuer_id = ? AND fields_json LIKE ? AND status = 'active'
+    `).get(batch.issuer_id, `%"certificate_number":"${mappedData.certificate_number}"%`) : null;
+
+    if (existingDoc && existingDoc.pdf_path && fs.existsSync(existingDoc.pdf_path)) {
+      db.prepare(`
+        UPDATE batch_rows
+        SET status = 'succeeded', doc_id = ?, error_message = NULL, updated_at = ?
+        WHERE id = ?
+      `).run(existingDoc.doc_id, new Date().toISOString(), row.id);
+
+      succeeded++;
+      db.prepare(`
+        UPDATE batch_jobs
+        SET succeeded_rows = ?, running_rows = 0, pending_rows = pending_rows - 1
+        WHERE id = ?
+      `).run(succeeded, batchId);
+      continue;
+    }
+
     db.prepare("UPDATE batch_rows SET status = 'running' WHERE id = ?").run(row.id);
     db.prepare('UPDATE batch_jobs SET running_rows = 1 WHERE id = ?').run(batchId);
 
     try {
-      const mappedData = JSON.parse(row.mapped_data_json || '{}');
       const docType = policy.doc_type || 'academic_certificate';
       const templateId = batch.template_id;
 
