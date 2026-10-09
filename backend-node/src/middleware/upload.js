@@ -20,6 +20,22 @@ const upload = multer({
   },
 });
 
+const SPREADSHEET_EXT = new Set(['.csv', '.xlsx']);
+
+const uploadSpreadsheet = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+  fileFilter(_req, file, cb) {
+    const ext = (file.originalname || '').toLowerCase().slice(-4);
+    const ext5 = (file.originalname || '').toLowerCase().slice(-5);
+    if (SPREADSHEET_EXT.has(ext) || SPREADSHEET_EXT.has(ext5)) return cb(null, true);
+    const err = new Error('Only CSV and XLSX spreadsheets are accepted');
+    err.code = 'UNSUPPORTED_FILE_TYPE';
+    err.status = 415;
+    cb(err);
+  },
+});
+
 /**
  * IMPORTANT: export the bare multer instance. Routes must call `upload.single('file')`
  * themselves — exporting a pre-applied `.single()` would make a second call return the
@@ -30,4 +46,4 @@ function randomName(original = '') {
   return `${crypto.randomBytes(12).toString('hex')}${ALLOWED_EXT.has(ext) ? ext : '.bin'}`;
 }
 
-module.exports = { upload, randomName };
+module.exports = { upload, uploadSpreadsheet, randomName };

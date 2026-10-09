@@ -12,7 +12,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
-const { upload } = require('../middleware/upload');
+const { uploadSpreadsheet } = require('../middleware/upload');
 const bulkSvc = require('../services/bulk.service');
 const templateSvc = require('../services/template.service');
 
@@ -94,7 +94,7 @@ router.get('/sample-template', (req, res) => {
  * POST /api/issue/bulk/validate
  * Multipart upload of spreadsheet + template_id + optional custom mapping
  */
-router.post('/validate', upload.single('file'), async (req, res, next) => {
+router.post('/validate', uploadSpreadsheet.single('file'), async (req, res, next) => {
   try {
     if (!req.file || !req.file.buffer) {
       return res.status(400).json({ error: { code: 'NO_FILE', message: 'No spreadsheet file uploaded' } });

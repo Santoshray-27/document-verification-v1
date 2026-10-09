@@ -217,3 +217,48 @@ test('Idempotency reconciliation safely re-links existing certificate without du
     try { fs.unlinkSync(dummyPdf); } catch {}
   });
 });
+
+test('HTTP API Excel upload, validation preview, batch processing, and ZIP download', async () => {
+  const { spawnSync } = require('child_process');
+  // Generate binary XLSX with 2 valid rows
+  const pyGen = `
+import openpyxl, io, sys
+wb = openpyxl.Workbook()
+ws = wb.active
+ws.append(["Student Name", "Certificate Number", "Course", "Grade", "Issue Date"])
+ws.append(["Rohan Mehta", "CERT-XL-001", "Computer Engineering", "A+", "2026-06-15"])
+ws.append(["Pooja Sen", "CERT-XL-002", "Data Science", "A", "2026-06-15"])
+buf = io.BytesIO()
+wb.save(buf)
+sys.stdout.buffer.write(buf.getvalue())
+`;
+  const genRes = spawnSync('python', ['-c', pyGen], { encoding: 'buffer' });
+  assert.ok(genRes.stdout && genRes.stdout.length > 0, 'Binary XLSX generated');
+
+  // Parse directly via bulkSvc
+  const parsedRows = bulkSvc.parseSpreadsheet(genRes.stdout, 'cohort.xlsx');
+  assert.strictEqual(parsedRows.length, 3, 'Must parse header and 2 rows');
+
+  // Verify column mapping
+  const headers = parsedRows[0];
+  const suggested = bulkSvc.suggestMapping(headers, ['name', 'certificate_number', 'course', 'grade', 'issue_date']);
+  assert.strictEqual(suggested['name'], 'Student Name');
+  assert.strictEqual(suggested['certificate_number'], 'Certificate Number');
+
+  // Verify row validation
+  const tpl = templateSvc.getTemplateById('tpl_acad_01');
+  const validation = bulkSvc.validateBatchRows(parsedRows.slice(1), headers, suggested, tpl);
+  assert.strictEqual(validation.total, 2);
+  assert.strictEqual(validation.valid, 2);
+  assert.strictEqual(validation.invalid, 0);
+
+  // Test ZIP archive generator with synthetic PDF items
+  const pdfBytes = Buffer.from('%PDF-1.4 sample pdf');
+  const zipBuf = bulkSvc.createZipArchive([
+    { name: 'Certificate_Rohan_Mehta.pdf', data: pdfBytes },
+    { name: 'Certificate_Pooja_Sen.pdf', data: pdfBytes }
+  ]);
+  assert.ok(zipBuf.length > 50, 'ZIP archive must be generated');
+  assert.strictEqual(zipBuf[0], 0x50, 'Must start with PK zip header');
+  assert.strictEqual(zipBuf[1], 0x4B, 'Must start with PK zip header');
+});
