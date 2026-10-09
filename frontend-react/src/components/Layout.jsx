@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { AlertTriangle, FileSearch, LogOut, Menu, ScrollText, ShieldCheck, Palette, X } from 'lucide-react';
+import { AlertTriangle, FileSearch, LogOut, Menu, ScrollText, ShieldCheck, Palette, LayoutTemplate, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import Logo from './Logo.jsx';
 
@@ -10,6 +10,7 @@ const NAV = {
     { to: '/issuer', label: 'Dashboard', icon: ShieldCheck },
     { to: '/issuer/issue', label: 'Issue document', icon: FileSearch },
     { to: '/issuer/documents', label: 'My documents', icon: ScrollText },
+    { to: '/issuer/studio', label: 'Template Studio', icon: LayoutTemplate },
     { to: '/issuer/settings', label: 'Branding', icon: Palette },
   ],
   admin: [{ to: '/admin/audit', label: 'Audit log', icon: ScrollText }],

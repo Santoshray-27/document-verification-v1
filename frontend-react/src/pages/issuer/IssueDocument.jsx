@@ -93,6 +93,7 @@ export default function IssueDocument() {
     try {
       const { data } = await api.post('/issue/start', {
         doc_type: form.doc_type,
+        template_id: form.template_id,
         fields: {
           name: form.name.trim(),
           certificate_number: form.certificate_number.trim(),
@@ -182,11 +183,16 @@ export default function IssueDocument() {
           <div className="mb-5">
             <div className="flex items-center justify-between mb-1.5">
               <label className="label mb-0" htmlFor="template_select">Active Template</label>
-              {templates.length > 0 && (
-                <span className="text-[11px] text-slate-400">
-                  {templates.find(t => t.id === form.template_id)?.category || 'General'}
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                <Link to="/issuer/studio" className="text-[11px] font-semibold text-gold-400 hover:text-gold-300 transition">
+                  + Create Custom Template
+                </Link>
+                {templates.length > 0 && (
+                  <span className="text-[11px] text-slate-400">
+                    {templates.find(t => t.id === form.template_id)?.category || 'General'}
+                  </span>
+                )}
+              </div>
             </div>
             <select
               id="template_select"

@@ -21,8 +21,8 @@ function ownDoc(req, res) {
 
 router.post('/start', (req, res, next) => {
   try {
-    const { fields, doc_type: docType, expires_at: expiresAt } = req.body || {};
-    const jobId = issueSvc.startIssueJob({ user: req.user, fields, docType, expiresAt });
+    const { fields, doc_type: docType, expires_at: expiresAt, template_id: templateId } = req.body || {};
+    const jobId = issueSvc.startIssueJob({ user: req.user, fields, docType, expiresAt, templateId });
     res.json({ ok: true, job_id: jobId });
   } catch (e) {
     if (e.code === 'VALIDATION_ERROR') return res.status(400).json({ error: { code: e.code, message: e.message } });

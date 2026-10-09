@@ -107,9 +107,17 @@ CREATE TABLE IF NOT EXISTS templates (
   tags_json      TEXT NOT NULL,
   is_system      INTEGER NOT NULL DEFAULT 1,
   issuer_id      TEXT REFERENCES issuers(issuer_id),
-  created_at     TEXT NOT NULL
+  version        INTEGER NOT NULL DEFAULT 1,
+  status         TEXT NOT NULL DEFAULT 'published',
+  background_id  TEXT,
+  page_size      TEXT NOT NULL DEFAULT 'A4',
+  orientation    TEXT NOT NULL DEFAULT 'portrait',
+  layout_config_json TEXT,
+  created_at     TEXT NOT NULL,
+  updated_at     TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_templates_org ON templates(org_types_json);
+CREATE INDEX IF NOT EXISTS idx_templates_issuer ON templates(issuer_id);
 
 CREATE TABLE IF NOT EXISTS issuer_branding (
   issuer_id         TEXT PRIMARY KEY REFERENCES issuers(issuer_id),
@@ -136,10 +144,36 @@ CREATE TABLE IF NOT EXISTS branding_assets (
   created_at  TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_branding_assets_issuer ON branding_assets(issuer_id);
+
+CREATE TABLE IF NOT EXISTS template_assets (
+  id           TEXT PRIMARY KEY,
+  issuer_id    TEXT NOT NULL REFERENCES issuers(issuer_id),
+  asset_type   TEXT NOT NULL CHECK (asset_type IN ('background', 'element')),
+  filename     TEXT NOT NULL,
+  mime_type    TEXT NOT NULL,
+  file_size    INTEGER NOT NULL,
+  display_name TEXT NOT NULL,
+  width        INTEGER,
+  height       INTEGER,
+  status       TEXT NOT NULL DEFAULT 'active',
+  created_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_template_assets_issuer ON template_assets(issuer_id);
 `;
 
 function migrate() {
   db.exec(SCHEMA);
+
+  // Backward-compatible migrations for existing databases
+  const tableCols = (table) => db.prepare(`PRAGMA table_info(${table})`).all().map(c => c.name);
+  const tplCols = new Set(tableCols('templates'));
+  if (!tplCols.has('version')) db.exec("ALTER TABLE templates ADD COLUMN version INTEGER NOT NULL DEFAULT 1");
+  if (!tplCols.has('status')) db.exec("ALTER TABLE templates ADD COLUMN status TEXT NOT NULL DEFAULT 'published'");
+  if (!tplCols.has('background_id')) db.exec("ALTER TABLE templates ADD COLUMN background_id TEXT");
+  if (!tplCols.has('page_size')) db.exec("ALTER TABLE templates ADD COLUMN page_size TEXT NOT NULL DEFAULT 'A4'");
+  if (!tplCols.has('orientation')) db.exec("ALTER TABLE templates ADD COLUMN orientation TEXT NOT NULL DEFAULT 'portrait'");
+  if (!tplCols.has('layout_config_json')) db.exec("ALTER TABLE templates ADD COLUMN layout_config_json TEXT");
+  if (!tplCols.has('updated_at')) db.exec("ALTER TABLE templates ADD COLUMN updated_at TEXT");
 }
 
 migrate();

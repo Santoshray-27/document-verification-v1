@@ -37,7 +37,7 @@ function validate(fields) {
   return errors;
 }
 
-function startIssueJob({ user, fields, docType = 'academic_certificate', expiresAt = null }) {
+function startIssueJob({ user, fields, docType = 'academic_certificate', expiresAt = null, templateId = null }) {
   const errors = validate(fields);
   if (errors.length) {
     const err = new Error(errors.join('; '));
@@ -46,11 +46,11 @@ function startIssueJob({ user, fields, docType = 'academic_certificate', expires
     throw err;
   }
   const jobId = jobs.newJob('issue', user.id, STEPS);
-  runIssue(jobId, { user, fields, docType, expiresAt }).catch((e) => jobs.fail(jobId, e.message, 'render_pdf'));
+  runIssue(jobId, { user, fields, docType, expiresAt, templateId }).catch((e) => jobs.fail(jobId, e.message, 'render_pdf'));
   return jobId;
 }
 
-async function runIssue(jobId, { user, fields, docType, expiresAt }) {
+async function runIssue(jobId, { user, fields, docType, expiresAt, templateId }) {
   // 1. validate + sanitize
   jobs.start(jobId, 'validate_fields', 'Checking required fields');
   const clean = {};
@@ -80,10 +80,34 @@ async function runIssue(jobId, { user, fields, docType, expiresAt }) {
   const brandingSvc = require('./branding.service');
   const brandingPayload = brandingSvc.buildBrandingPayloadForIssuer(issuer.issuer_id);
 
+  let customLayout = null;
+  if (templateId) {
+    const tplSvc = require('./template.service');
+    const tpl = tplSvc.getTemplateById(templateId);
+    if (tpl && (tpl.is_system === 1 || tpl.issuer_id === issuer.issuer_id)) {
+      let bgBase64 = null;
+      if (tpl.background_id) {
+        const bgFile = tplSvc.getBackgroundAsset(tpl.background_id, issuer.issuer_id);
+        if (bgFile) bgBase64 = bgFile.buffer.toString('base64');
+      }
+      let fieldsConfig = null;
+      if (tpl.layout_config_json) {
+        try { fieldsConfig = JSON.parse(tpl.layout_config_json)?.fields || null; } catch {}
+      }
+      if (bgBase64 || fieldsConfig) {
+        customLayout = {
+          background_base64: bgBase64,
+          fields: fieldsConfig
+        };
+      }
+    }
+  }
+
   const rendered = await worker.renderCertificate({
     fields: clean, doc_id: docId, qr_text: qrText,
     issuer_name: issuer.name, issued_at: issuedAt, doc_type: docType,
     branding: brandingPayload,
+    custom_layout: customLayout,
   });
   const pdfBytes = Buffer.from(rendered.pdf_base64, 'base64');
   const snapshotBytes = Buffer.from(rendered.snapshot_png_base64, 'base64');

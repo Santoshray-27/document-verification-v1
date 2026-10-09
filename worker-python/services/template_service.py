@@ -108,6 +108,7 @@ def render_certificate_pdf(
     issued_at: str,
     doc_type: str = "academic_certificate",
     branding: dict | None = None,
+    custom_layout: dict | None = None,
 ) -> bytes:
     """Render the certificate and return the final PDF bytes."""
     name = sanitize(fields.get("name"), "name") or "Unnamed Recipient"
@@ -137,20 +138,34 @@ def render_certificate_pdf(
     c.setAuthor(issuer)
     c.setSubject(f"doc_id={doc_id}")
 
-    # ---- background ----
-    c.setFillColor(white)
-    c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
-    c.setFillColor(HexColor("#F7F8FC"))
-    c.rect(0, PAGE_H - 150, PAGE_W, 150, stroke=0, fill=1)
+    # Check for custom background image
+    bg_reader = None
+    if custom_layout and isinstance(custom_layout, dict):
+        bg_b64 = custom_layout.get("background_base64")
+        if bg_b64:
+            bg_reader = _safe_image_reader(bg_b64)
 
-    # ---- double border + ornaments ----
-    c.setStrokeColor(primary_color)
-    c.setLineWidth(2.2)
-    c.rect(MARGIN - 14, MARGIN - 14, PAGE_W - 2 * (MARGIN - 14), PAGE_H - 2 * (MARGIN - 14), stroke=1, fill=0)
-    c.setStrokeColor(accent_color)
-    c.setLineWidth(0.7)
-    c.rect(MARGIN - 6, MARGIN - 6, PAGE_W - 2 * (MARGIN - 6), PAGE_H - 2 * (MARGIN - 6), stroke=1, fill=0)
-    _corner_ornaments(c, MARGIN - 6, MARGIN - 6, PAGE_W - MARGIN + 6, PAGE_H - MARGIN + 6)
+    # ---- background ----
+    if bg_reader:
+        try:
+            c.drawImage(bg_reader, 0, 0, width=PAGE_W, height=PAGE_H, mask=None)
+        except Exception:
+            c.setFillColor(white)
+            c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+    else:
+        c.setFillColor(white)
+        c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+        c.setFillColor(HexColor("#F7F8FC"))
+        c.rect(0, PAGE_H - 150, PAGE_W, 150, stroke=0, fill=1)
+
+        # ---- double border + ornaments only when standard template background ----
+        c.setStrokeColor(primary_color)
+        c.setLineWidth(2.2)
+        c.rect(MARGIN - 14, MARGIN - 14, PAGE_W - 2 * (MARGIN - 14), PAGE_H - 2 * (MARGIN - 14), stroke=1, fill=0)
+        c.setStrokeColor(accent_color)
+        c.setLineWidth(0.7)
+        c.rect(MARGIN - 6, MARGIN - 6, PAGE_W - 2 * (MARGIN - 6), PAGE_H - 2 * (MARGIN - 6), stroke=1, fill=0)
+        _corner_ornaments(c, MARGIN - 6, MARGIN - 6, PAGE_W - MARGIN + 6, PAGE_H - MARGIN + 6)
 
     # ---- header logos if present ----
     if branding and isinstance(branding, dict):
@@ -188,94 +203,146 @@ def render_certificate_pdf(
     c.setFont("Helvetica-Oblique", 8.5)
     c.drawCentredString(PAGE_W / 2, y - 58, "Digitally signed and registered document")
 
-    # ---- title ----
-    y = PAGE_H - 250
-    c.setFillColor(NAVY)
-    c.setFont("Helvetica-Bold", 17)
-    c.drawCentredString(PAGE_W / 2, y, title)
+    # Check if a custom fields layout is provided
+    custom_fields = None
+    if custom_layout and isinstance(custom_layout, dict):
+        custom_fields = custom_layout.get("fields")
 
-    # ---- body ----
-    if doc_type == "marksheet":
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica", 11.5)
-        c.drawCentredString(PAGE_W / 2, y - 34, "Official Transcript of Records")
-        
-        c.setFillColor(INK)
-        c.setFont("Times-Bold", 27)
-        c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-        c.setStrokeColor(GOLD)
-        c.setLineWidth(0.9)
-        name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+    if custom_fields and isinstance(custom_fields, list) and len(custom_fields) > 0:
+        # Render custom fields according to specified coordinates and styles
+        # frontend coordinates: origin at top-left (0,0) -> ReportLab: (x, PAGE_H - y)
+        field_values = {
+            "name": name,
+            "course": course,
+            "grade": grade,
+            "certificate_number": cert_no,
+            "issue_date": issue_date,
+            "issuer_name": issuer,
+            "title": title,
+        }
 
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 11.5)
-        line_y = y - 112
-        if course:
-            c.drawCentredString(PAGE_W / 2, line_y, f"Program: {course}")
-            line_y -= 20
-        if grade:
-            c.setFont("Helvetica-Bold", 14)
-            c.setFillColor(NAVY)
-            c.drawCentredString(PAGE_W / 2, line_y, f"Overall Grade/Marks: {grade}")
-            c.setFillColor(INK)
-            c.setFont("Helvetica", 11.5)
-            line_y -= 20
-        if issue_date:
-            c.drawCentredString(PAGE_W / 2, line_y, f"Date of Issue: {issue_date}")
-            
-    elif doc_type == "bonafide":
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica", 11.5)
-        c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
-        
-        c.setFillColor(INK)
-        c.setFont("Times-Bold", 27)
-        c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-        c.setStrokeColor(GOLD)
-        c.setLineWidth(0.9)
-        name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+        for f_cfg in custom_fields:
+            if not isinstance(f_cfg, dict):
+                continue
+            key = f_cfg.get("key")
+            val = str(field_values.get(key, f_cfg.get("default_text") or ""))
+            if not val:
+                continue
 
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 11.5)
-        line_y = y - 112
-        c.drawCentredString(PAGE_W / 2, line_y, "is/was a bonafide student of this institution")
-        line_y -= 20
-        if course:
-            c.drawCentredString(PAGE_W / 2, line_y, f"enrolled in the {course} program.")
-            line_y -= 20
-        if issue_date:
-            c.drawCentredString(PAGE_W / 2, line_y, f"Issued on {issue_date}")
+            x = float(f_cfg.get("x", PAGE_W / 2))
+            top_y = float(f_cfg.get("y", 250))
+            rl_y = PAGE_H - top_y
+
+            font_name = f_cfg.get("font", "Helvetica")
+            if font_name not in ("Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Times-Roman", "Times-Bold", "Courier", "Courier-Bold"):
+                font_name = "Helvetica"
+            font_size = float(f_cfg.get("font_size", 12))
+            align = f_cfg.get("align", "center")
+            color_hex = f_cfg.get("color", "#1B2437")
+
+            c.setFont(font_name, font_size)
+            try:
+                c.setFillColor(HexColor(str(color_hex)))
+            except Exception:
+                c.setFillColor(INK)
+
+            if align == "center":
+                c.drawCentredString(x, rl_y, val[:60])
+            elif align == "right":
+                c.drawRightString(x, rl_y, val[:60])
+            else:
+                c.drawString(x, rl_y, val[:60])
 
     else:
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica", 10.5)
-        c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
+        # Standard built-in body rendering
+        # ---- title ----
+        y = PAGE_H - 250
+        c.setFillColor(NAVY)
+        c.setFont("Helvetica-Bold", 17)
+        c.drawCentredString(PAGE_W / 2, y, title)
 
-        c.setFillColor(INK)
-        c.setFont("Times-Bold", 27)
-        c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-        c.setStrokeColor(GOLD)
-        c.setLineWidth(0.9)
-        name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+        # ---- body ----
+        if doc_type == "marksheet":
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 11.5)
+            c.drawCentredString(PAGE_W / 2, y - 34, "Official Transcript of Records")
 
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 11.5)
-        line_y = y - 112
-        if course:
-            c.drawCentredString(PAGE_W / 2, line_y, f"has successfully completed  {course}")
-            line_y -= 20
-        if grade:
-            c.setFont("Helvetica-Bold", 11.5)
-            c.setFillColor(NAVY)
-            c.drawCentredString(PAGE_W / 2, line_y, f"Grade: {grade}")
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(GOLD)
+            c.setLineWidth(0.9)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+
             c.setFillColor(INK)
             c.setFont("Helvetica", 11.5)
+            line_y = y - 112
+            if course:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Program: {course}")
+                line_y -= 20
+            if grade:
+                c.setFont("Helvetica-Bold", 14)
+                c.setFillColor(NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, f"Overall Grade/Marks: {grade}")
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Date of Issue: {issue_date}")
+
+        elif doc_type == "bonafide":
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 11.5)
+            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
+            
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(GOLD)
+            c.setLineWidth(0.9)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+
+            c.setFillColor(INK)
+            c.setFont("Helvetica", 11.5)
+            line_y = y - 112
+            c.drawCentredString(PAGE_W / 2, line_y, "is/was a bonafide student of this institution")
             line_y -= 20
-        if issue_date:
-            c.drawCentredString(PAGE_W / 2, line_y, f"Issued on {issue_date}")
+            if course:
+                c.drawCentredString(PAGE_W / 2, line_y, f"enrolled in the {course} program.")
+                line_y -= 20
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Issued on {issue_date}")
+
+        else:
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 10.5)
+            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
+
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(GOLD)
+            c.setLineWidth(0.9)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+
+            c.setFillColor(INK)
+            c.setFont("Helvetica", 11.5)
+            line_y = y - 112
+            if course:
+                c.drawCentredString(PAGE_W / 2, line_y, f"has successfully completed  {course}")
+                line_y -= 20
+            if grade:
+                c.setFont("Helvetica-Bold", 11.5)
+                c.setFillColor(NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, f"Grade: {grade}")
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Issued on {issue_date}")
 
     # ---- seal / signatory ----
     custom_seal = None
