@@ -142,6 +142,22 @@ async def extract_qr(file: UploadFile = File(...)):
         return {"ok": False, "found": False, "raw_text": None, "doc_id": None, "error": str(e)}
 
 
+@app.post("/metadata")
+async def extract_metadata(file: UploadFile = File(...)):
+    """Extract metadata (producer, creator, etc.) and heuristic tamper signals."""
+    data = await file.read()
+    if not data:
+        return {"ok": False, "error": "empty upload"}
+    is_pdf = data[:5] == b"%PDF-"
+    try:
+        if is_pdf:
+            return {"ok": True, **metadata_service.pdf_metadata(data)}
+        else:
+            return {"ok": True, **metadata_service.image_metadata(data)}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+
 if __name__ == "__main__":
     import uvicorn
 
