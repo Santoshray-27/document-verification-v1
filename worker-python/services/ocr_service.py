@@ -42,20 +42,49 @@ def _to_gray_bgr(data: bytes, is_pdf: bool) -> np.ndarray | None:
 def ocr_text(data: bytes, is_pdf: bool) -> tuple[str, float]:
     """Returns (text, average word confidence 0..100). Empty text on failure."""
     img = _to_gray_bgr(data, is_pdf)
-    if img is None:
-        return "", 0.0
-    if img.ndim == 3 and img.shape[2] == 4:
-        img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
-    gray = cv2.resize(gray, None, fx=1.0, fy=1.0, interpolation=cv2.INTER_AREA)
+    if img is not None:
+        if img.ndim == 3 and img.shape[2] == 4:
+            img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
+        gray = cv2.resize(gray, None, fx=1.0, fy=1.0, interpolation=cv2.INTER_AREA)
+        try:
+            text = pytesseract.image_to_string(gray, lang=LANG)
+            data_out = pytesseract.image_to_data(gray, lang=LANG, output_type=pytesseract.Output.DICT)
+            confs = [float(x) for x in data_out.get("conf", []) if str(x) not in ("-1", "") and float(x) >= 0]
+            avg = round(sum(confs) / len(confs), 1) if confs else 0.0
+            if text.strip():
+                return text, avg
+        except Exception:
+            pass
+
+    # Fallback 1: for PDFs, extract vector text directly with PyMuPDF
+    if is_pdf:
+        try:
+            with fitz.open(stream=data, filetype="pdf") as doc:
+                text = "\n".join(page.get_text() for page in doc)
+                if text.strip():
+                    return text, 95.0
+        except Exception:
+            pass
+
+    # Fallback 2: for images, extract using native Windows OCR (winocr) if available
     try:
-        text = pytesseract.image_to_string(gray, lang=LANG)
-        data_out = pytesseract.image_to_data(gray, lang=LANG, output_type=pytesseract.Output.DICT)
-        confs = [float(x) for x in data_out.get("conf", []) if str(x) not in ("-1", "") and float(x) >= 0]
-        avg = round(sum(confs) / len(confs), 1) if confs else 0.0
-        return text, avg
+        import concurrent.futures
+        import io
+        import winocr
+        from PIL import Image
+        img_pil = Image.open(io.BytesIO(data))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            res = pool.submit(winocr.recognize_pil_sync, img_pil).result()
+        if res:
+            lines = [l["text"] for l in res.get("lines", [])]
+            text = "\n".join(lines) if lines else res.get("text", "")
+            if text.strip():
+                return text, 92.0
     except Exception:
-        return "", 0.0
+        pass
+
+    return "", 0.0
 
 
 def _after_label(line: str, patterns: list[str]) -> str | None:
@@ -68,15 +97,48 @@ def _after_label(line: str, patterns: list[str]) -> str | None:
     return None
 
 
+ALL_LABEL_PATTERNS = [
+    r"CERTIFICATE\s*(?:ID|NO)",
+    r"DOCUMENT\s*(?:ID|NO)",
+    r"ISSUER",
+    r"UNIVERSITY",
+    r"INSTITUTE",
+    r"ISSUE\s*DATE",
+    r"DATE\s*OF\s*ISSUE",
+    r"DATED",
+    r"COURSE",
+    r"PROGRAM(?:ME)?",
+    r"DEGREE",
+    r"GRADE",
+    r"CGPA",
+    r"MARKS",
+    r"AGNI\s*TIA",
+    r"PROOF\s*IN\s*EVERY\s*PIXEL",
+    r"SCAN\s*TO\s*VERIFY",
+]
+
+
+def _is_label(s: str) -> bool:
+    clean = s.strip()
+    return any(re.match(r"^" + p + r"\s*[:\-]?$", clean, re.I) for p in ALL_LABEL_PATTERNS)
+
+
 def parse_fields(text: str) -> dict:
     """Best-effort field extraction from raw OCR text."""
     fields: dict[str, str] = {}
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
 
     for key, patterns in LABELS.items():
-        for ln in lines:
+        for i, ln in enumerate(lines):
             val = _after_label(ln, patterns)
-            if val and key not in fields:
+            if not val and i + 1 < len(lines):
+                for p in patterns:
+                    if re.match(r"^" + p + r"\s*[:\-]?$", ln, flags=re.I):
+                        cand = lines[i + 1].strip(" :|\t")
+                        if cand and cand not in ("—", "-") and not _is_label(cand):
+                            val = cand[:80]
+                            break
+            if val and not _is_label(val) and key not in fields:
                 fields[key] = val
                 break
 
@@ -94,9 +156,9 @@ def parse_fields(text: str) -> dict:
         ):
             # strip a leading "ISSUER"/"UNIVERSITY" label if present
             cand = re.sub(r"^\s*(ISSUER|UNIVERSITY|INSTITUTE)\s*[:\-]?\s*", "", ln, flags=re.I).strip()
-            if cand:
+            if cand and not _is_label(cand):
                 candidates.append(cand)
-    if fields.get("issuer_name"):
+    if fields.get("issuer_name") and not _is_label(fields["issuer_name"]):
         candidates.append(fields["issuer_name"])
     candidates = [c for c in candidates if not re.match(r"^(of|the of|and)\b", c, re.I)]
     if candidates:
@@ -108,6 +170,20 @@ def parse_fields(text: str) -> dict:
     m = re.search(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", text)
     if m:
         fields["doc_id"] = m.group(0)
+
+    # certificate_number: prefer exact pattern AGN-... or cert code
+    m = re.search(r"\b([A-Z]{3,4}-\d{4}-[A-Za-z0-9-]+)\b", text) or re.search(r"\b(AGN-[A-Za-z0-9-]+)\b", text)
+    if m:
+        fields["certificate_number"] = m.group(1)
+    elif "certificate_number" in fields and _is_label(fields["certificate_number"]):
+        fields.pop("certificate_number")
+
+    # issue_date: prefer YYYY-MM-DD
+    m = re.search(r"\b(20\d{2}-\d{2}-\d{2})\b", text)
+    if m:
+        fields["issue_date"] = m.group(1)
+    elif "issue_date" in fields and _is_label(fields["issue_date"]):
+        fields.pop("issue_date")
 
     # name: the largest-looking line under "This is to certify that", else longest alpha line
     name = None

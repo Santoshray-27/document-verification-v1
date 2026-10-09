@@ -14,15 +14,15 @@
     },
     {
       "name": "A11b screenshot PNG",
-      "got": "UNABLE TO ASSESS",
+      "got": "GENUINE COPY",
       "want": "GENUINE COPY",
-      "ok": false
+      "ok": true
     },
     {
       "name": "A11c scanned JPEG",
-      "got": "UNABLE TO ASSESS",
+      "got": "GENUINE COPY",
       "want": "GENUINE COPY",
-      "ok": false
+      "ok": true
     },
     {
       "name": "A10a name edited in PDF",
@@ -38,9 +38,9 @@
     },
     {
       "name": "A10c name edited in image space",
-      "got": "UNABLE TO ASSESS",
+      "got": "ALTERED",
       "want": "ALTERED",
-      "ok": false
+      "ok": true
     },
     {
       "name": "A12  fake content + copied genuine QR",
@@ -211,5 +211,5 @@
       "ok": true
     }
   ],
-  "doc_id": "c888f216-d1df-465d-82cc-df91ca09235c"
+  "doc_id": "e02eabd6-c96a-468c-81f2-7afad3457678"
 }
