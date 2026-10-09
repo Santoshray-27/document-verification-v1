@@ -85,7 +85,8 @@ function ensure(dir) { fs.mkdirSync(path.join(SAMPLES, dir), { recursive: true }
 
 async function main() {
   ['copies', 'altered', 'forged', 'unverifiable', 'revoked'].forEach(ensure);
-  const genuinePath = path.join(STORAGE, 'issued', `${docId}.pdf`);
+  const genuinePath = path.join(STORAGE, 'issued', `${docId}.pdf`).replace(/\\/g, '/');
+  const samplesDir = SAMPLES.replace(/\\/g, '/');
   if (!fs.existsSync(genuinePath)) throw new Error('genuine pdf not found: ' + genuinePath);
   const genuine = fs.readFileSync(genuinePath);
   console.log(`genuine: ${docId}.pdf (${(genuine.length / 1024).toFixed(1)} KB)`);

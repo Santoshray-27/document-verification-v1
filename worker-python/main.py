@@ -74,10 +74,14 @@ async def render_certificate(payload: dict):
         issuer_name = str(payload.get("issuer_name") or "")
         issued_at = str(payload.get("issued_at") or "19700101T000000Z")
         doc_type = str(payload.get("doc_type") or "academic_certificate")
+        branding = payload.get("branding") or None
+        custom_layout = payload.get("custom_layout") or None
 
         pdf_bytes = template_service.render_certificate_pdf(
             fields=fields, doc_id=doc_id, qr_text=qr_text,
             issuer_name=issuer_name, issued_at=issued_at, doc_type=doc_type,
+            branding=branding,
+            custom_layout=custom_layout,
         )
         snapshot = pdf_service.first_page_png(pdf_bytes)
         return {

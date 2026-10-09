@@ -48,7 +48,7 @@ DOC_TYPE_TITLES = {
     "commercial_invoice": "COMMERCIAL INVOICE",
 }
 
-MAX_LEN = {"name": 60, "course": 80, "grade": 20, "certificate_number": 40, "issue_date": 30, "issuer_name": 70}
+MAX_LEN = {"name": 60, "course": 80, "grade": 30, "certificate_number": 40, "issue_date": 30, "issuer_name": 70}
 
 
 def sanitize(value: str, key: str = "") -> str:
@@ -98,6 +98,19 @@ def _seal(c: canvas.Canvas, cx: float, cy: float, r: float, short_id: str) -> No
     c.drawCentredString(cx, cy - 13, short_id[:16])
 
 
+def _safe_image_reader(b64_str: str) -> ImageReader | None:
+    if not b64_str:
+        return None
+    try:
+        import base64
+        raw = base64.b64decode(b64_str)
+        buf = io.BytesIO(raw)
+        buf.seek(0)
+        return ImageReader(buf)
+    except Exception:
+        return None
+
+
 def render_certificate_pdf(
     fields: dict,
     doc_id: str,
@@ -105,6 +118,8 @@ def render_certificate_pdf(
     issuer_name: str,
     issued_at: str,
     doc_type: str = "academic_certificate",
+    branding: dict | None = None,
+    custom_layout: dict | None = None,
 ) -> bytes:
     """Render the certificate and return the final PDF bytes."""
     name = sanitize(fields.get("name"), "name") or "Unnamed Recipient"
@@ -115,6 +130,17 @@ def render_certificate_pdf(
     issuer = sanitize(issuer_name, "issuer_name") or "Registered Issuer"
     title = DOC_TYPE_TITLES.get(doc_type, "CERTIFICATE")
 
+    # Custom colors from branding if provided
+    primary_color = NAVY
+    accent_color = GOLD
+    if branding and isinstance(branding, dict):
+        p_hex = branding.get("primary_color")
+        if p_hex and re.match(r"^#[0-9a-fA-F]{3,6}$", str(p_hex)):
+            primary_color = HexColor(str(p_hex))
+        a_hex = branding.get("accent_color")
+        if a_hex and re.match(r"^#[0-9a-fA-F]{3,6}$", str(a_hex)):
+            accent_color = HexColor(str(a_hex))
+
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=A4, invariant=1)
     c.setProducer("Evidentia Verifier 1.0")
@@ -123,20 +149,52 @@ def render_certificate_pdf(
     c.setAuthor(issuer)
     c.setSubject(f"doc_id={doc_id}")
 
-    # ---- background ----
-    c.setFillColor(white)
-    c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
-    c.setFillColor(HexColor("#F7F8FC"))
-    c.rect(0, PAGE_H - 150, PAGE_W, 150, stroke=0, fill=1)
+    # Check for custom background image
+    bg_reader = None
+    if custom_layout and isinstance(custom_layout, dict):
+        bg_b64 = custom_layout.get("background_base64")
+        if bg_b64:
+            bg_reader = _safe_image_reader(bg_b64)
 
-    # ---- double border + ornaments ----
-    c.setStrokeColor(NAVY)
-    c.setLineWidth(2.2)
-    c.rect(MARGIN - 14, MARGIN - 14, PAGE_W - 2 * (MARGIN - 14), PAGE_H - 2 * (MARGIN - 14), stroke=1, fill=0)
-    c.setStrokeColor(GOLD)
-    c.setLineWidth(0.7)
-    c.rect(MARGIN - 6, MARGIN - 6, PAGE_W - 2 * (MARGIN - 6), PAGE_H - 2 * (MARGIN - 6), stroke=1, fill=0)
-    _corner_ornaments(c, MARGIN - 6, MARGIN - 6, PAGE_W - MARGIN + 6, PAGE_H - MARGIN + 6)
+    # ---- background ----
+    if bg_reader:
+        try:
+            c.drawImage(bg_reader, 0, 0, width=PAGE_W, height=PAGE_H, mask=None)
+        except Exception:
+            c.setFillColor(white)
+            c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+    else:
+        c.setFillColor(white)
+        c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+        c.setFillColor(HexColor("#F7F8FC"))
+        c.rect(0, PAGE_H - 150, PAGE_W, 150, stroke=0, fill=1)
+
+        # ---- double border + ornaments only when standard template background ----
+        c.setStrokeColor(primary_color)
+        c.setLineWidth(2.2)
+        c.rect(MARGIN - 14, MARGIN - 14, PAGE_W - 2 * (MARGIN - 14), PAGE_H - 2 * (MARGIN - 14), stroke=1, fill=0)
+        c.setStrokeColor(accent_color)
+        c.setLineWidth(0.7)
+        c.rect(MARGIN - 6, MARGIN - 6, PAGE_W - 2 * (MARGIN - 6), PAGE_H - 2 * (MARGIN - 6), stroke=1, fill=0)
+        _corner_ornaments(c, MARGIN - 6, MARGIN - 6, PAGE_W - MARGIN + 6, PAGE_H - MARGIN + 6)
+
+    # ---- header logos if present ----
+    if branding and isinstance(branding, dict):
+        primary_logo = _safe_image_reader(branding.get("primary_logo_base64"))
+        if primary_logo:
+            try:
+                # Top left header logo (max 52x52)
+                c.drawImage(primary_logo, MARGIN + 12, PAGE_H - 105, width=52, height=52, mask="auto", preserveAspectRatio=True)
+            except Exception:
+                pass
+
+        event_logo = _safe_image_reader(branding.get("event_logo_base64"))
+        if event_logo:
+            try:
+                # Top right header logo (max 52x52)
+                c.drawImage(event_logo, PAGE_W - MARGIN - 64, PAGE_H - 105, width=52, height=52, mask="auto", preserveAspectRatio=True)
+            except Exception:
+                pass
 
     # ---- header (Primary brand is Issuer Organization Name) ----
     y = PAGE_H - 88
@@ -436,17 +494,26 @@ def render_certificate_pdf(
             c.drawCentredString(PAGE_W / 2, y - 128, f"Performance Evaluation: {perf}")
 
     else:
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica", 10.5)
-        c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
+        # Standard built-in body rendering
+        # ---- title ----
+        y = PAGE_H - 250
+        c.setFillColor(NAVY)
+        c.setFont("Helvetica-Bold", 17)
+        c.drawCentredString(PAGE_W / 2, y, title)
 
-        c.setFillColor(INK)
-        c.setFont("Times-Bold", 27)
-        c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-        c.setStrokeColor(GOLD)
-        c.setLineWidth(0.9)
-        name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+        # ---- body ----
+        if doc_type == "marksheet":
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 11.5)
+            c.drawCentredString(PAGE_W / 2, y - 34, "Official Transcript of Records")
+
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(GOLD)
+            c.setLineWidth(0.9)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
 
         c.setFillColor(INK)
         c.setFont("Helvetica", 11.5)
@@ -460,12 +527,210 @@ def render_certificate_pdf(
             c.drawCentredString(PAGE_W / 2, line_y, f"Grade: {grade}")
             c.setFillColor(INK)
             c.setFont("Helvetica", 11.5)
-            line_y -= 20
-        if issue_date:
-            c.drawCentredString(PAGE_W / 2, line_y, f"Issued on {issue_date}")
+            line_y = y - 112
+            if course:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Program: {course}")
+                line_y -= 20
+            if grade:
+                c.setFont("Helvetica-Bold", 14)
+                c.setFillColor(NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, f"Overall Grade/Marks: {grade}")
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Date of Issue: {issue_date}")
 
-    # ---- seal ----
-    _seal(c, PAGE_W - 130, PAGE_H - 470, 44, doc_id)
+        elif doc_type == "bonafide":
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 11.5)
+            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
+            
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(GOLD)
+            c.setLineWidth(0.9)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+
+            c.setFillColor(INK)
+            c.setFont("Helvetica", 11.5)
+            line_y = y - 112
+            c.drawCentredString(PAGE_W / 2, line_y, "is/was a bonafide student of this institution")
+            line_y -= 20
+            if course:
+                c.drawCentredString(PAGE_W / 2, line_y, f"enrolled in the {course} program.")
+                line_y -= 20
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Issued on {issue_date}")
+
+        elif doc_type in ("hackathon_participation", "hackathon_winner"):
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 11.5)
+            action_text = "This certificate is proudly awarded to"
+            c.drawCentredString(PAGE_W / 2, y - 34, action_text)
+
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(accent_color or GOLD)
+            c.setLineWidth(1.2)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+
+            c.setFillColor(INK)
+            c.setFont("Helvetica", 11.5)
+            line_y = y - 112
+            if doc_type == "hackathon_winner":
+                c.drawCentredString(PAGE_W / 2, line_y, f"for demonstrating exceptional engineering excellence in")
+                line_y -= 20
+                event_name = course or "EVIDENTIA National Hackathon"
+                c.setFont("Helvetica-Bold", 13.5)
+                c.setFillColor(primary_color or NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, event_name)
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+                if grade:
+                    c.setFont("Helvetica-Bold", 13.0)
+                    c.setFillColor(GOLD)
+                    c.drawCentredString(PAGE_W / 2, line_y, f"Standing / Award: {grade}")
+                    c.setFillColor(INK)
+                    c.setFont("Helvetica", 11.5)
+                    line_y -= 20
+            else:
+                c.drawCentredString(PAGE_W / 2, line_y, f"for active and successful participation in")
+                line_y -= 20
+                event_name = course or "EVIDENTIA Hackathon 2026"
+                c.setFont("Helvetica-Bold", 13.0)
+                c.setFillColor(primary_color or NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, event_name)
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+                if grade:
+                    c.drawCentredString(PAGE_W / 2, line_y, f"Track / Team Recognition: {grade}")
+                    line_y -= 20
+
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Presented on {issue_date}")
+
+        elif doc_type == "workshop_completion":
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 11.5)
+            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
+
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(GOLD)
+            c.setLineWidth(0.9)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+
+            c.setFillColor(INK)
+            c.setFont("Helvetica", 11.5)
+            line_y = y - 112
+            c.drawCentredString(PAGE_W / 2, line_y, "has successfully attended and completed the intensive workshop on")
+            line_y -= 20
+            if course:
+                c.setFont("Helvetica-Bold", 13)
+                c.setFillColor(primary_color or NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, course)
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+            if grade:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Proficiency Level: {grade}")
+                line_y -= 20
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Awarded on {issue_date}")
+
+        elif doc_type == "internship_certificate":
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 11.5)
+            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
+
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(GOLD)
+            c.setLineWidth(0.9)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+
+            c.setFillColor(INK)
+            c.setFont("Helvetica", 11.5)
+            line_y = y - 112
+            c.drawCentredString(PAGE_W / 2, line_y, "has successfully completed a practical internship program as")
+            line_y -= 20
+            if course:
+                c.setFont("Helvetica-Bold", 13)
+                c.setFillColor(primary_color or NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, course)
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+            if grade:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Performance Evaluation: {grade}")
+                line_y -= 20
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Dated: {issue_date}")
+
+        else:
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 10.5)
+            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
+
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(GOLD)
+            c.setLineWidth(0.9)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+
+            c.setFillColor(INK)
+            c.setFont("Helvetica", 11.5)
+            line_y = y - 112
+            if course:
+                c.drawCentredString(PAGE_W / 2, line_y, f"has successfully completed  {course}")
+                line_y -= 20
+            if grade:
+                c.setFont("Helvetica-Bold", 11.5)
+                c.setFillColor(NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, f"Grade: {grade}")
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Issued on {issue_date}")
+
+    # ---- seal / signatory ----
+    custom_seal = None
+    custom_signatory = None
+    if branding and isinstance(branding, dict):
+        custom_seal = _safe_image_reader(branding.get("seal_base64"))
+        custom_signatory = _safe_image_reader(branding.get("signatory_base64"))
+
+    if custom_seal:
+        try:
+            c.drawImage(custom_seal, PAGE_W - 130 - 36, PAGE_H - 470 - 36, width=72, height=72, mask="auto", preserveAspectRatio=True)
+        except Exception:
+            _seal(c, PAGE_W - 130, PAGE_H - 470, 44, doc_id)
+    else:
+        _seal(c, PAGE_W - 130, PAGE_H - 470, 44, doc_id)
+
+    if custom_signatory:
+        try:
+            # Authorized signatory signature image positioned above signatory label
+            c.drawImage(custom_signatory, MARGIN + 40, PAGE_H - 475, width=90, height=36, mask="auto", preserveAspectRatio=True)
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica-Bold", 7.5)
+            c.drawString(MARGIN + 40, PAGE_H - 485, "AUTHORIZED SIGNATORY")
+        except Exception:
+            pass
 
     # ---- facts block (OCR-friendly, fixed layout) ----
     fy = PAGE_H - 560
@@ -487,6 +752,26 @@ def render_certificate_pdf(
         c.setFillColor(INK)
         c.setFont("Courier" if k in ("DOCUMENT ID", "CERTIFICATE ID") else "Helvetica", 9)
         c.drawString(MARGIN + 150, ry, sanitize(v, k.lower())[:58])
+
+    # ---- sponsor logos (bottom left, strictly non-overlapping with QR code) ----
+    if branding and isinstance(branding, dict):
+        sponsors_b64 = branding.get("sponsors_base64") or []
+        if isinstance(sponsors_b64, list) and len(sponsors_b64) > 0:
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica-Bold", 7.0)
+            c.drawString(MARGIN + 14, MARGIN + 86, "PARTNERS & SPONSORS")
+            sp_x = MARGIN + 14
+            max_sp_x = PAGE_W - MARGIN - 26 - 88 - 20 # Leave safe gap before QR box
+            for sp_b64 in sponsors_b64[:6]:
+                if sp_x + 44 > max_sp_x:
+                    break
+                sp_img = _safe_image_reader(sp_b64)
+                if sp_img:
+                    try:
+                        c.drawImage(sp_img, sp_x, MARGIN + 32, width=42, height=42, mask="auto", preserveAspectRatio=True)
+                        sp_x += 50
+                    except Exception:
+                        pass
 
     # ---- QR (bottom right) ----
     qr_size = 88
