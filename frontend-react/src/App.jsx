@@ -8,6 +8,7 @@ import NotFound from './pages/NotFound.jsx';
 import Dashboard from './pages/issuer/Dashboard.jsx';
 import IssueDocument from './pages/issuer/IssueDocument.jsx';
 import MyDocuments from './pages/issuer/MyDocuments.jsx';
+import Settings from './pages/issuer/Settings.jsx';
 import VerifyPage from './pages/verifier/VerifyPage.jsx';
 import ResultPage from './pages/verifier/ResultPage.jsx';
 import PublicVerify from './pages/public/PublicVerify.jsx';
@@ -58,6 +59,14 @@ export default function App() {
           element={
             <RequireRole roles={['issuer']}>
               <MyDocuments />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/issuer/settings"
+          element={
+            <RequireRole roles={['issuer']}>
+              <Settings />
             </RequireRole>
           }
         />

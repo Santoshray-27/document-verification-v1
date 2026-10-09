@@ -110,6 +110,32 @@ CREATE TABLE IF NOT EXISTS templates (
   created_at     TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_templates_org ON templates(org_types_json);
+
+CREATE TABLE IF NOT EXISTS issuer_branding (
+  issuer_id         TEXT PRIMARY KEY REFERENCES issuers(issuer_id),
+  primary_color     TEXT NOT NULL DEFAULT '#0A1F44',
+  accent_color      TEXT NOT NULL DEFAULT '#C9A227',
+  primary_logo_id   TEXT,
+  event_logo_id     TEXT,
+  signatory_id      TEXT,
+  seal_id           TEXT,
+  sponsor_ids_json  TEXT NOT NULL DEFAULT '[]',
+  updated_at        TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS branding_assets (
+  id          TEXT PRIMARY KEY,
+  issuer_id   TEXT NOT NULL REFERENCES issuers(issuer_id),
+  asset_type  TEXT NOT NULL CHECK (asset_type IN ('primary_logo', 'event_logo', 'partner_logo', 'sponsor_logo', 'signatory', 'seal')),
+  filename    TEXT NOT NULL,
+  mime_type   TEXT NOT NULL,
+  file_size   INTEGER NOT NULL,
+  display_name TEXT NOT NULL,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  status      TEXT NOT NULL DEFAULT 'active',
+  created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_branding_assets_issuer ON branding_assets(issuer_id);
 `;
 
 function migrate() {

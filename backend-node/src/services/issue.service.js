@@ -77,9 +77,13 @@ async function runIssue(jobId, { user, fields, docType, expiresAt }) {
   // 4. render PDF via the Python worker
   jobs.start(jobId, 'render_pdf', 'Calling the document worker');
   const issuedAt = new Date().toISOString();
+  const brandingSvc = require('./branding.service');
+  const brandingPayload = brandingSvc.buildBrandingPayloadForIssuer(issuer.issuer_id);
+
   const rendered = await worker.renderCertificate({
     fields: clean, doc_id: docId, qr_text: qrText,
     issuer_name: issuer.name, issued_at: issuedAt, doc_type: docType,
+    branding: brandingPayload,
   });
   const pdfBytes = Buffer.from(rendered.pdf_base64, 'base64');
   const snapshotBytes = Buffer.from(rendered.snapshot_png_base64, 'base64');

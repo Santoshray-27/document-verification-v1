@@ -87,6 +87,19 @@ def _seal(c: canvas.Canvas, cx: float, cy: float, r: float, short_id: str) -> No
     c.drawCentredString(cx, cy - 13, short_id[:16])
 
 
+def _safe_image_reader(b64_str: str) -> ImageReader | None:
+    if not b64_str:
+        return None
+    try:
+        import base64
+        raw = base64.b64decode(b64_str)
+        buf = io.BytesIO(raw)
+        buf.seek(0)
+        return ImageReader(buf)
+    except Exception:
+        return None
+
+
 def render_certificate_pdf(
     fields: dict,
     doc_id: str,
@@ -94,6 +107,7 @@ def render_certificate_pdf(
     issuer_name: str,
     issued_at: str,
     doc_type: str = "academic_certificate",
+    branding: dict | None = None,
 ) -> bytes:
     """Render the certificate and return the final PDF bytes."""
     name = sanitize(fields.get("name"), "name") or "Unnamed Recipient"
@@ -103,6 +117,17 @@ def render_certificate_pdf(
     issue_date = sanitize(fields.get("issue_date"), "issue_date")
     issuer = sanitize(issuer_name, "issuer_name") or "Registered Issuer"
     title = DOC_TYPE_TITLES.get(doc_type, "CERTIFICATE")
+
+    # Custom colors from branding if provided
+    primary_color = NAVY
+    accent_color = GOLD
+    if branding and isinstance(branding, dict):
+        p_hex = branding.get("primary_color")
+        if p_hex and re.match(r"^#[0-9a-fA-F]{3,6}$", str(p_hex)):
+            primary_color = HexColor(str(p_hex))
+        a_hex = branding.get("accent_color")
+        if a_hex and re.match(r"^#[0-9a-fA-F]{3,6}$", str(a_hex)):
+            accent_color = HexColor(str(a_hex))
 
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=A4, invariant=1)
@@ -119,23 +144,41 @@ def render_certificate_pdf(
     c.rect(0, PAGE_H - 150, PAGE_W, 150, stroke=0, fill=1)
 
     # ---- double border + ornaments ----
-    c.setStrokeColor(NAVY)
+    c.setStrokeColor(primary_color)
     c.setLineWidth(2.2)
     c.rect(MARGIN - 14, MARGIN - 14, PAGE_W - 2 * (MARGIN - 14), PAGE_H - 2 * (MARGIN - 14), stroke=1, fill=0)
-    c.setStrokeColor(GOLD)
+    c.setStrokeColor(accent_color)
     c.setLineWidth(0.7)
     c.rect(MARGIN - 6, MARGIN - 6, PAGE_W - 2 * (MARGIN - 6), PAGE_H - 2 * (MARGIN - 6), stroke=1, fill=0)
     _corner_ornaments(c, MARGIN - 6, MARGIN - 6, PAGE_W - MARGIN + 6, PAGE_H - MARGIN + 6)
 
+    # ---- header logos if present ----
+    if branding and isinstance(branding, dict):
+        primary_logo = _safe_image_reader(branding.get("primary_logo_base64"))
+        if primary_logo:
+            try:
+                # Top left header logo (max 52x52)
+                c.drawImage(primary_logo, MARGIN + 12, PAGE_H - 105, width=52, height=52, mask="auto", preserveAspectRatio=True)
+            except Exception:
+                pass
+
+        event_logo = _safe_image_reader(branding.get("event_logo_base64"))
+        if event_logo:
+            try:
+                # Top right header logo (max 52x52)
+                c.drawImage(event_logo, PAGE_W - MARGIN - 64, PAGE_H - 105, width=52, height=52, mask="auto", preserveAspectRatio=True)
+            except Exception:
+                pass
+
     # ---- header ----
     y = PAGE_H - 92
-    c.setFillColor(NAVY)
+    c.setFillColor(primary_color)
     c.setFont("Helvetica-Bold", 20)
     c.drawCentredString(PAGE_W / 2, y, "A G N I T I A")
-    c.setFillColor(GOLD)
+    c.setFillColor(accent_color)
     c.setFont("Helvetica", 8)
     c.drawCentredString(PAGE_W / 2, y - 15, "PROOF  IN  EVERY  PIXEL")
-    c.setStrokeColor(GOLD)
+    c.setStrokeColor(accent_color)
     c.setLineWidth(0.8)
     c.line(PAGE_W / 2 - 90, y - 24, PAGE_W / 2 + 90, y - 24)
     c.setFillColor(NAVY_SOFT)
@@ -234,8 +277,30 @@ def render_certificate_pdf(
         if issue_date:
             c.drawCentredString(PAGE_W / 2, line_y, f"Issued on {issue_date}")
 
-    # ---- seal ----
-    _seal(c, PAGE_W - 130, PAGE_H - 470, 44, doc_id)
+    # ---- seal / signatory ----
+    custom_seal = None
+    custom_signatory = None
+    if branding and isinstance(branding, dict):
+        custom_seal = _safe_image_reader(branding.get("seal_base64"))
+        custom_signatory = _safe_image_reader(branding.get("signatory_base64"))
+
+    if custom_seal:
+        try:
+            c.drawImage(custom_seal, PAGE_W - 130 - 36, PAGE_H - 470 - 36, width=72, height=72, mask="auto", preserveAspectRatio=True)
+        except Exception:
+            _seal(c, PAGE_W - 130, PAGE_H - 470, 44, doc_id)
+    else:
+        _seal(c, PAGE_W - 130, PAGE_H - 470, 44, doc_id)
+
+    if custom_signatory:
+        try:
+            # Authorized signatory signature image positioned above signatory label
+            c.drawImage(custom_signatory, MARGIN + 40, PAGE_H - 475, width=90, height=36, mask="auto", preserveAspectRatio=True)
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica-Bold", 7.5)
+            c.drawString(MARGIN + 40, PAGE_H - 485, "AUTHORIZED SIGNATORY")
+        except Exception:
+            pass
 
     # ---- facts block (OCR-friendly, fixed layout) ----
     fy = PAGE_H - 560
@@ -257,6 +322,26 @@ def render_certificate_pdf(
         c.setFillColor(INK)
         c.setFont("Courier" if k in ("DOCUMENT ID", "CERTIFICATE ID") else "Helvetica", 9)
         c.drawString(MARGIN + 150, ry, sanitize(v, k.lower())[:58])
+
+    # ---- sponsor logos (bottom left, strictly non-overlapping with QR code) ----
+    if branding and isinstance(branding, dict):
+        sponsors_b64 = branding.get("sponsors_base64") or []
+        if isinstance(sponsors_b64, list) and len(sponsors_b64) > 0:
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica-Bold", 7.0)
+            c.drawString(MARGIN + 14, MARGIN + 86, "PARTNERS & SPONSORS")
+            sp_x = MARGIN + 14
+            max_sp_x = PAGE_W - MARGIN - 26 - 88 - 20 # Leave safe gap before QR box
+            for sp_b64 in sponsors_b64[:6]:
+                if sp_x + 44 > max_sp_x:
+                    break
+                sp_img = _safe_image_reader(sp_b64)
+                if sp_img:
+                    try:
+                        c.drawImage(sp_img, sp_x, MARGIN + 32, width=42, height=42, mask="auto", preserveAspectRatio=True)
+                        sp_x += 50
+                    except Exception:
+                        pass
 
     # ---- QR (bottom right) ----
     qr_size = 88
