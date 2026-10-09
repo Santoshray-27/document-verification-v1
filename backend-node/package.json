@@ -10,7 +10,7 @@
     "dev": "node --watch server.js",
     "init": "node ../scripts/generate-keys.js && node ../scripts/init-db.js && node ../scripts/seed-demo.js",
     "test": "node --test ../tests/",
-    "test:unit": "node --test ../tests/crypto.test.js ../tests/verdict.test.js tests/llm.test.js",
+    "test:unit": "node --test ../tests/crypto.test.js ../tests/verdict.test.js tests/llm.test.js tests/semantic.test.js",
     "test:e2e": "node ../tests/e2e.js"
   },
   "dependencies": {
