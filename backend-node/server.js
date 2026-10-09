@@ -65,7 +65,10 @@ app.get('/api/health', async (_req, res) => {
 // The issuer router is mounted twice (once per prefix) so its role guard only applies to
 // issuer routes. Mounting it at /api would run requireRole('issuer') on EVERY /api/* request.
 const issuerRouter = require('./src/routes/issuer');
+const bulkRouter = require('./src/routes/bulk');
 app.use('/api/auth', require('./src/routes/auth'));
+app.use('/api/issue/bulk', bulkRouter);
+app.use('/api/issuer/bulk', bulkRouter);
 app.use('/api/issue', issuerRouter);   // POST /api/issue/start, GET /api/issue/jobs/:jobId
 app.use('/api/issuer', issuerRouter);  // GET /api/issuer/documents, /dashboard, POST .../revoke
 app.use('/api/verify', require('./src/routes/verify'));

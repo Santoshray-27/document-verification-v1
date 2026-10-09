@@ -10,6 +10,7 @@ import IssueDocument from './pages/issuer/IssueDocument.jsx';
 import MyDocuments from './pages/issuer/MyDocuments.jsx';
 import Settings from './pages/issuer/Settings.jsx';
 import TemplateStudio from './pages/issuer/TemplateStudio.jsx';
+import BulkIssuance from './pages/issuer/BulkIssuance.jsx';
 import VerifyPage from './pages/verifier/VerifyPage.jsx';
 import ResultPage from './pages/verifier/ResultPage.jsx';
 import PublicVerify from './pages/public/PublicVerify.jsx';
@@ -52,6 +53,14 @@ export default function App() {
           element={
             <RequireRole roles={['issuer']}>
               <IssueDocument />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/issuer/bulk"
+          element={
+            <RequireRole roles={['issuer']}>
+              <BulkIssuance />
             </RequireRole>
           }
         />

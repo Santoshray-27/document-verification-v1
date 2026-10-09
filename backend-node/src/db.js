@@ -159,6 +159,47 @@ CREATE TABLE IF NOT EXISTS template_assets (
   created_at   TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_template_assets_issuer ON template_assets(issuer_id);
+
+CREATE TABLE IF NOT EXISTS batch_jobs (
+  id               TEXT PRIMARY KEY,
+  issuer_id        TEXT NOT NULL REFERENCES issuers(issuer_id),
+  template_id      TEXT NOT NULL REFERENCES templates(id),
+  template_version INTEGER NOT NULL DEFAULT 1,
+  total_rows       INTEGER NOT NULL DEFAULT 0,
+  pending_rows     INTEGER NOT NULL DEFAULT 0,
+  running_rows     INTEGER NOT NULL DEFAULT 0,
+  succeeded_rows   INTEGER NOT NULL DEFAULT 0,
+  failed_rows      INTEGER NOT NULL DEFAULT 0,
+  skipped_rows     INTEGER NOT NULL DEFAULT 0,
+  status           TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'pending', 'processing', 'completed', 'failed', 'cancelled')),
+  mapping_json     TEXT NOT NULL DEFAULT '{}',
+  policy_json      TEXT NOT NULL DEFAULT '{}',
+  created_by       INTEGER,
+  created_at       TEXT NOT NULL,
+  started_at       TEXT,
+  completed_at     TEXT,
+  error_message    TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_batch_jobs_issuer ON batch_jobs(issuer_id);
+CREATE INDEX IF NOT EXISTS idx_batch_jobs_status ON batch_jobs(status);
+
+CREATE TABLE IF NOT EXISTS batch_rows (
+  id               TEXT PRIMARY KEY,
+  batch_id         TEXT NOT NULL REFERENCES batch_jobs(id) ON DELETE CASCADE,
+  row_number       INTEGER NOT NULL,
+  raw_data_json    TEXT NOT NULL,
+  mapped_data_json TEXT NOT NULL DEFAULT '{}',
+  validation_status TEXT NOT NULL DEFAULT 'pending' CHECK (validation_status IN ('pending', 'valid', 'invalid', 'duplicate')),
+  validation_errors_json TEXT NOT NULL DEFAULT '[]',
+  status           TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'succeeded', 'failed', 'skipped')),
+  doc_id           TEXT REFERENCES documents(doc_id),
+  idempotency_key  TEXT,
+  error_message    TEXT,
+  created_at       TEXT NOT NULL,
+  updated_at       TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_batch_rows_batch ON batch_rows(batch_id);
+CREATE INDEX IF NOT EXISTS idx_batch_rows_idemp ON batch_rows(idempotency_key);
 `;
 
 function migrate() {
