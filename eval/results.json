@@ -1,0 +1,364 @@
+{
+  "ran_at": "2026-10-09T00:21:19.157Z",
+  "files": 40,
+  "correct": 40,
+  "accuracy_pct": 100,
+  "false_alarms": [],
+  "missed_tampering": [],
+  "avg_ms": 6642,
+  "p95_ms": 8483,
+  "ocr_fields": 114,
+  "ocr_matched": 95,
+  "per_class": {
+    "GENUINE": {
+      "n": 10,
+      "correct": 10
+    },
+    "GENUINE COPY": {
+      "n": 5,
+      "correct": 5
+    },
+    "ALTERED": {
+      "n": 12,
+      "correct": 12
+    },
+    "FORGED": {
+      "n": 2,
+      "correct": 2
+    },
+    "NOT ISSUED": {
+      "n": 6,
+      "correct": 6
+    },
+    "UNABLE TO ASSESS": {
+      "n": 1,
+      "correct": 1
+    },
+    "REVOKED": {
+      "n": 4,
+      "correct": 4
+    }
+  },
+  "rows": [
+    {
+      "file": "genuine_EVAL-001.pdf",
+      "expected": "GENUINE",
+      "verdict": "GENUINE",
+      "confidence": "High",
+      "ok": true,
+      "wall": 6733
+    },
+    {
+      "file": "genuine_EVAL-002.pdf",
+      "expected": "GENUINE",
+      "verdict": "GENUINE",
+      "confidence": "High",
+      "ok": true,
+      "wall": 6343
+    },
+    {
+      "file": "genuine_EVAL-003.pdf",
+      "expected": "GENUINE",
+      "verdict": "GENUINE",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7415
+    },
+    {
+      "file": "genuine_EVAL-004.pdf",
+      "expected": "GENUINE",
+      "verdict": "GENUINE",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7761
+    },
+    {
+      "file": "genuine_EVAL-005.pdf",
+      "expected": "GENUINE",
+      "verdict": "GENUINE",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7048
+    },
+    {
+      "file": "genuine_EVAL-006.pdf",
+      "expected": "GENUINE",
+      "verdict": "GENUINE",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7056
+    },
+    {
+      "file": "genuine_EVAL-007.pdf",
+      "expected": "GENUINE",
+      "verdict": "GENUINE",
+      "confidence": "High",
+      "ok": true,
+      "wall": 6701
+    },
+    {
+      "file": "genuine_EVAL-008.pdf",
+      "expected": "GENUINE",
+      "verdict": "GENUINE",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7762
+    },
+    {
+      "file": "genuine_EVAL-009.pdf",
+      "expected": "GENUINE",
+      "verdict": "GENUINE",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7054
+    },
+    {
+      "file": "genuine_EVAL-010.pdf",
+      "expected": "GENUINE",
+      "verdict": "GENUINE",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7758
+    },
+    {
+      "file": "copy_01_resave.pdf",
+      "expected": "GENUINE COPY",
+      "verdict": "GENUINE COPY",
+      "confidence": "High",
+      "ok": true,
+      "wall": 9172
+    },
+    {
+      "file": "copy_02_screenshot.png",
+      "expected": "GENUINE COPY",
+      "verdict": "GENUINE COPY",
+      "confidence": "High",
+      "ok": true,
+      "wall": 4947
+    },
+    {
+      "file": "copy_03_jpeg70.jpg",
+      "expected": "GENUINE COPY",
+      "verdict": "GENUINE COPY",
+      "confidence": "High",
+      "ok": true,
+      "wall": 5295
+    },
+    {
+      "file": "copy_04_grayscale.png",
+      "expected": "GENUINE COPY",
+      "verdict": "GENUINE COPY",
+      "confidence": "High",
+      "ok": true,
+      "wall": 4947
+    },
+    {
+      "file": "copy_05_scan.jpg",
+      "expected": "GENUINE COPY",
+      "verdict": "GENUINE COPY",
+      "confidence": "Medium",
+      "ok": true,
+      "wall": 4635
+    },
+    {
+      "file": "altered_01_name.pdf",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7764
+    },
+    {
+      "file": "altered_02_grade.pdf",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7760
+    },
+    {
+      "file": "altered_03_certno.pdf",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 8483
+    },
+    {
+      "file": "altered_04_date.pdf",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "Medium",
+      "ok": true,
+      "wall": 8122
+    },
+    {
+      "file": "altered_05_course.pdf",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "Medium",
+      "ok": true,
+      "wall": 7772
+    },
+    {
+      "file": "altered_06_course2.pdf",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "Medium",
+      "ok": true,
+      "wall": 7772
+    },
+    {
+      "file": "altered_07_name2.pdf",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7767
+    },
+    {
+      "file": "altered_08_grade2.pdf",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7401
+    },
+    {
+      "file": "altered_09_img_name.png",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 4600
+    },
+    {
+      "file": "altered_10_img_grade.png",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 4230
+    },
+    {
+      "file": "altered_11_img_name2.png",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 4583
+    },
+    {
+      "file": "altered_12_img_course.png",
+      "expected": "ALTERED",
+      "verdict": "ALTERED",
+      "confidence": "Medium",
+      "ok": true,
+      "wall": 4949
+    },
+    {
+      "file": "forged_01_copied_qr.pdf",
+      "expected": "FORGED",
+      "verdict": "FORGED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7052
+    },
+    {
+      "file": "forged_02_copied_qr.pdf",
+      "expected": "FORGED",
+      "verdict": "FORGED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7048
+    },
+    {
+      "file": "forged_03_never_registered.pdf",
+      "expected": "NOT ISSUED",
+      "verdict": "NOT ISSUED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 6696
+    },
+    {
+      "file": "forged_04_never_registered.pdf",
+      "expected": "NOT ISSUED",
+      "verdict": "NOT ISSUED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 6694
+    },
+    {
+      "file": "forged_05_no_qr.png",
+      "expected": "UNABLE TO ASSESS",
+      "verdict": "UNABLE TO ASSESS",
+      "confidence": "Low",
+      "ok": true,
+      "wall": 1059
+    },
+    {
+      "file": "forged_06_unsigned.pdf",
+      "expected": "NOT ISSUED",
+      "verdict": "NOT ISSUED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 6695
+    },
+    {
+      "file": "unverifiable_01_other_issuer.pdf",
+      "expected": "NOT ISSUED",
+      "verdict": "NOT ISSUED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 6693
+    },
+    {
+      "file": "unverifiable_02_other_issuer.pdf",
+      "expected": "NOT ISSUED",
+      "verdict": "NOT ISSUED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7048
+    },
+    {
+      "file": "unverifiable_03_other_issuer.pdf",
+      "expected": "NOT ISSUED",
+      "verdict": "NOT ISSUED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7043
+    },
+    {
+      "file": "revoked_01_EVAL-011.pdf",
+      "expected": "REVOKED",
+      "verdict": "REVOKED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7045
+    },
+    {
+      "file": "revoked_02_EVAL-012.pdf",
+      "expected": "REVOKED",
+      "verdict": "REVOKED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7047
+    },
+    {
+      "file": "revoked_03_EVAL-013.pdf",
+      "expected": "REVOKED",
+      "verdict": "REVOKED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 7046
+    },
+    {
+      "file": "revoked_04_EVAL-014.pdf",
+      "expected": "REVOKED",
+      "verdict": "REVOKED",
+      "confidence": "High",
+      "ok": true,
+      "wall": 6688
+    }
+  ]
+}
