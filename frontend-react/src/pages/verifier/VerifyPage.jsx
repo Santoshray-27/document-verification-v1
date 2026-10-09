@@ -1,18 +1,21 @@
+import React, { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Camera, CameraOff, FileUp, Hash, ScanLine } from 'lucide-react';
+import { AlertCircle, Camera, CameraOff, FileUp, Hash, ScanLine, ShieldCheck } from 'lucide-react';
 import jsQR from 'jsqr';
 import api, { errMsg } from '../../api/axios';
 import UploadBox from '../../components/UploadBox.jsx';
 import Stepper, { useElapsed } from '../../components/Stepper.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { fmtMs } from '../../lib/format';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Label } from '../../components/ui/label.jsx';
 
 const TABS = [
-  { id: 'upload', label: 'Upload file', icon: FileUp },
-  { id: 'scan', label: 'Scan QR', icon: ScanLine },
-  { id: 'id', label: 'Enter document ID', icon: Hash },
+  { id: 'upload', label: 'Upload Document', icon: FileUp },
+  { id: 'scan', label: 'Scan QR Camera', icon: ScanLine },
+  { id: 'id', label: 'Enter Document ID', icon: Hash },
 ];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -73,7 +76,7 @@ export default function VerifyPage() {
   const submit = (e) => {
     e.preventDefault();
     if (tab === 'upload') {
-      if (!file) return setError('Choose a PDF, PNG or JPEG first.');
+      if (!file) return setError('Choose a PDF, PNG or JPEG document first.');
       return start(file, null);
     }
     if (tab === 'id') {
@@ -86,80 +89,113 @@ export default function VerifyPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+      {/* Page Header */}
       <header className="mb-8 text-center">
-        <p className="section-title">Verification</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">Check a document</h1>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
-          Upload the file you hold. We compare it against the signed registry record — hash, signature, status, then OCR and visual
-          forensics if the bytes differ. No account needed.
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Cryptographic & Forensic Verification
+        </span>
+        <h1 className="mt-2 font-display text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+          Verify Any Document
+        </h1>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          Upload any file you hold. The platform cross-references the signed registry record — verifying ECDSA digital signatures, SHA-256 hashes, OCR text, and visual difference forensics.
         </p>
       </header>
 
-      <div className="glass p-6">
-        <div className="mb-6 flex gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.03] p-1">
+      {/* Main Verification Card */}
+      <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 text-card-foreground shadow-xl">
+        {/* Tab Selector */}
+        <div className="mb-6 flex gap-1.5 rounded-2xl border border-border bg-muted/30 p-1.5">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => { setTab(t.id); setError(''); }}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                tab === t.id ? 'bg-gold-500 text-navy-900' : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-200'
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
+                tab === t.id
+                  ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
-              <t.icon size={14} />
+              <t.icon size={15} />
               <span className="hidden sm:inline">{t.label}</span>
             </button>
           ))}
         </div>
 
-        <form onSubmit={submit} className="space-y-5">
+        <form onSubmit={submit} className="space-y-6">
           {(tab === 'upload' || tab === 'id') && (
-            <UploadBox file={file} onFile={(f) => { setFile(f); setError(''); }} onError={setError} disabled={running} />
+            <UploadBox
+              file={file}
+              onFile={(f) => { setFile(f); setError(''); }}
+              onError={setError}
+              disabled={running}
+            />
           )}
 
-          {tab === 'scan' && <QrScanTab onDocId={(id) => { setDocId(id); setTab('id'); toast.success('QR read — now attach the file for exact verification'); }} onError={setError} />}
+          {tab === 'scan' && (
+            <QrScanTab
+              onDocId={(id) => {
+                setDocId(id);
+                setTab('id');
+                toast.success('QR successfully decoded — now attach your document for forensic cross-check');
+              }}
+              onError={setError}
+            />
+          )}
 
           {tab === 'id' && (
             <div>
-              <label className="label" htmlFor="doc_id">Document ID</label>
-              <input
+              <Label htmlFor="doc_id" className="mb-1.5 block">Document UUID</Label>
+              <Input
                 id="doc_id"
-                className="input mono"
+                className="font-mono text-sm"
                 value={docId}
                 onChange={(e) => setDocId(e.target.value)}
                 placeholder="xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx"
                 spellCheck={false}
               />
-              <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-                Found on the document, or inside its QR link. If the file also carries a readable QR, the QR wins — it is harder to mistype.
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                Found on the physical or digital document, or inside its QR URL. If the file contains an embedded QR code, the embedded code takes precedence.
               </p>
             </div>
           )}
 
           {error && (
-            <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-rose-400/25 bg-rose-500/10 px-3.5 py-3 text-sm text-rose-200">
+            <div
+              role="alert"
+              className="flex items-start gap-2.5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs font-medium text-rose-700 dark:text-rose-300"
+            >
               <AlertCircle size={16} className="mt-0.5 shrink-0" />
-              {error}
+              <span>{error}</span>
             </div>
           )}
 
-          <button type="submit" disabled={running} className="btn-primary w-full py-3">
-            {running ? `Verifying… ${fmtMs(elapsed)}` : 'Run verification'}
-          </button>
+          <Button
+            type="submit"
+            variant="default"
+            size="lg"
+            disabled={running}
+            loading={running}
+            className="w-full text-base font-semibold py-3"
+          >
+            {running ? `Executing Verification… (${fmtMs(elapsed)})` : 'Run Deterministic Verification'}
+          </Button>
         </form>
       </div>
 
-      <p className="mt-5 text-center text-xs leading-relaxed text-slate-500">
-        Your file is analysed and then deleted from the upload folder. Only the hash, the verdict and the evidence are stored.
+      <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground">
+        Your uploaded file is inspected in-memory and removed immediately after forensic processing. Only cryptographic proofs and evidence hashes are preserved.
       </p>
 
+      {/* SSE Pipeline Live Stepper Modal */}
       <AnimatePresence>
         {job && running && (
           <Stepper
             overlay
             steps={job.steps}
             progress={job.progress}
-            title="Verifying your document"
-            subtitle={`Running for ${fmtMs(elapsed)} — each step below really executed`}
+            title="Running Multi-Layer Verification Pipeline"
+            subtitle={`Elapsed: ${fmtMs(elapsed)} · Extracting QR, validating ECDSA signature, inspecting OCR fields and SSIM differences`}
           />
         )}
       </AnimatePresence>
@@ -167,10 +203,7 @@ export default function VerifyPage() {
   );
 }
 
-/**
- * Camera QR scanning with jsQR. If the camera is unavailable or denied, we fall back to
- * uploading an image of the QR — which uses the server-side OpenCV decoder.
- */
+/** Camera QR scanning with jsQR with photo fallback */
 function QrScanTab({ onDocId, onError }) {
   const videoRef = useRef(null);
   const [scanning, setScanning] = useState(false);
@@ -205,7 +238,7 @@ function QrScanTab({ onDocId, onError }) {
             const id = code.data.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0];
             stop();
             if (id) return onDocId(id);
-            onError('That QR does not contain an Agnitia document ID.');
+            onError('The scanned QR does not contain an authentic Agnitia document identifier.');
             return;
           }
         }
@@ -213,7 +246,7 @@ function QrScanTab({ onDocId, onError }) {
       };
       requestAnimationFrame(tick);
     } catch {
-      setCamError('Camera unavailable or permission denied — upload a photo of the QR instead.');
+      setCamError('Camera unavailable or permission denied. You can upload an image containing the QR code below.');
       setScanning(false);
     }
   };
@@ -225,44 +258,67 @@ function QrScanTab({ onDocId, onError }) {
       fd.append('file', f);
       const { data } = await api.post('/public/extract-qr', fd);
       if (data.found && data.doc_id) return onDocId(data.doc_id);
-      onError('No QR code could be decoded from that image.');
+      onError('No QR code could be decoded from that file.');
     } catch (e) {
       onError(errMsg(e, 'QR decoding failed'));
     }
   };
 
   return (
-    <div>
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-navy-950/60">
-        <video ref={videoRef} playsInline muted className={`mx-auto max-h-[320px] w-full object-contain ${scanning ? '' : 'hidden'}`} />
+    <div className="space-y-4">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-muted/40">
+        <video
+          ref={videoRef}
+          playsInline
+          muted
+          className={`mx-auto max-h-[320px] w-full object-contain ${scanning ? '' : 'hidden'}`}
+        />
         {!scanning && (
           <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-gold-400/25 bg-gold-500/10 text-gold-300">
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-card text-amber-700 dark:text-amber-400">
               {camError ? <CameraOff size={24} /> : <Camera size={24} />}
             </span>
-            <p className="text-sm font-semibold text-white">{camError ? 'Camera not available' : 'Point the camera at the QR code'}</p>
-            {camError && <p className="max-w-sm text-xs leading-relaxed text-slate-400">{camError}</p>}
-            <button type="button" onClick={startCam} className="btn-ghost btn-sm mt-1">
-              <Camera size={14} /> Start camera
-            </button>
+            <p className="text-sm font-semibold text-foreground">
+              {camError ? 'Camera Access Required' : 'Scan Physical QR Code'}
+            </p>
+            {camError && <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">{camError}</p>}
+            <Button type="button" variant="outline" size="sm" onClick={startCam} className="mt-1">
+              <Camera size={14} className="mr-1.5" /> Start Camera
+            </Button>
           </div>
         )}
         {scanning && (
           <>
-            <span className="pointer-events-none absolute inset-x-8 top-1/2 h-0.5 -translate-y-1/2 animate-pulse bg-gold-400/80 shadow-[0_0_16px_2px_rgba(212,175,55,0.6)]" />
-            <button type="button" onClick={stop} className="absolute bottom-3 right-3 rounded-lg bg-navy-950/80 px-3 py-1.5 text-xs text-slate-300">
-              Stop
+            <span className="pointer-events-none absolute inset-x-8 top-1/2 h-0.5 -translate-y-1/2 animate-pulse bg-amber-500 shadow-[0_0_12px_2px_rgba(245,158,11,0.6)]" />
+            <button
+              type="button"
+              onClick={stop}
+              className="absolute bottom-3 right-3 rounded-lg bg-card/90 px-3 py-1.5 text-xs text-foreground border border-border shadow-xs"
+            >
+              Stop Camera
             </button>
           </>
         )}
       </div>
 
-      <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.02] p-4 text-center">
-        <p className="text-xs text-slate-400">No camera, or it will not start?</p>
-        <button type="button" onClick={() => fileRef.current?.click()} className="btn-ghost btn-sm mt-2.5">
-          Upload a photo of the QR
-        </button>
-        <input ref={fileRef} type="file" accept=".png,.jpg,.jpeg,.pdf" className="hidden" onChange={(e) => onImage(e.target.files?.[0])} />
+      <div className="rounded-2xl border border-border bg-muted/20 p-4 text-center">
+        <p className="text-xs text-muted-foreground">Prefer uploading a photo or screenshot of the QR?</p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => fileRef.current?.click()}
+          className="mt-2.5"
+        >
+          Select QR Image
+        </Button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".png,.jpg,.jpeg,.pdf"
+          className="hidden"
+          onChange={(e) => onImage(e.target.files?.[0])}
+        />
       </div>
     </div>
   );
