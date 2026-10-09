@@ -105,14 +105,80 @@ async def start_verification(
             confidence = "High"
             reasons.append({"code": "INVALID_SIGNATURE", "title": "Invalid Signature", "detail": "Cryptographic signature validation failed.", "severity": "error"})
             
-        checks.append({"id": "registry_lookup", "name": "Signed Registry Record", "status": "passed", "detail": f"Document issued by {issuer['name'] if issuer else 'Registered Issuer'}"})
-        checks.append({"id": "signature_verify", "name": "Digital Signature (ECDSA P-256)", "status": "passed" if sig_valid else "failed", "detail": f"Key ID: {doc['kid']}"})
-        checks.append({"id": "hash_compare", "name": "SHA-256 File Hash", "status": "passed" if exact_match else "failed", "detail": f"Hash: {file_hash[:16]}..."})
+        checks.append({
+            "id": "validate",
+            "label": "File format validation",
+            "status": "passed",
+            "message": f"Accepted {('PDF' if is_pdf else 'Image')} ({(len(contents) / 1024):.1f} KB)",
+            "detail": {"size_bytes": len(contents)}
+        })
+        checks.append({
+            "id": "hash",
+            "label": "SHA-256 file hash",
+            "status": "passed",
+            "message": f"Computed {file_hash[:16]}...{file_hash[-8:]}",
+            "detail": {"sha256": file_hash}
+        })
+        checks.append({
+            "id": "qr_extract",
+            "label": "QR code extraction",
+            "status": "passed" if qr_result.get("found") else "warning",
+            "message": f"QR detected → {qr_result.get('doc_id') or qr_result.get('raw_text')}" if qr_result.get("found") else "No QR code detected in this file",
+            "detail": qr_result
+        })
+        checks.append({
+            "id": "registry_lookup",
+            "label": "Signed registry lookup",
+            "status": "passed",
+            "message": f"Record found · issued by {issuer['name'] if issuer else 'Registered Issuer'}",
+            "detail": {"doc_id": doc["doc_id"], "issuer": issuer["name"] if issuer else None}
+        })
+        checks.append({
+            "id": "signature_verify",
+            "label": "Digital signature (ECDSA P-256)",
+            "status": "passed" if sig_valid else "failed",
+            "message": f"Signature valid · key {doc['kid']}" if sig_valid else "Signature did not verify against issuer public key",
+            "detail": {"kid": doc["kid"], "algorithm": "ECDSA-P256-SHA256"}
+        })
+        checks.append({
+            "id": "status_check",
+            "label": "Revocation / expiry status",
+            "status": "passed" if doc["status"] == "active" else "failed",
+            "message": f"Status: {doc['status'].upper()}" if doc["status"] != "active" else "Active — not revoked, not expired",
+            "detail": {"status": doc["status"], "revoke_reason": doc.get("revoke_reason")}
+        })
+        checks.append({
+            "id": "hash_compare",
+            "label": "File hash vs registry hash",
+            "status": "passed" if exact_match else "failed",
+            "message": "Exact byte-for-byte match with the issued original" if exact_match else f"Differs from original (uploaded {file_hash[:16]}... vs stored {doc['file_hash'][:16]}...)",
+            "detail": {"expected_hash": doc["file_hash"], "uploaded_hash": file_hash}
+        })
     else:
         verdict = "NOT ISSUED"
         confidence = "High"
         reasons.append({"code": "NOT_IN_REGISTRY", "title": "No Registry Record Found", "detail": "This document has never been issued through the Evidentia network.", "severity": "error"})
-        checks.append({"id": "registry_lookup", "name": "Signed Registry Record", "status": "failed", "detail": "No matching record found"})
+        checks.append({
+            "id": "validate",
+            "label": "File format validation",
+            "status": "passed",
+            "message": f"Accepted {('PDF' if is_pdf else 'Image')} ({(len(contents) / 1024):.1f} KB)",
+            "detail": {"size_bytes": len(contents)}
+        })
+        checks.append({
+            "id": "hash",
+            "label": "SHA-256 file hash",
+            "status": "passed",
+            "message": f"Computed {file_hash[:16]}...{file_hash[-8:]}",
+            "detail": {"sha256": file_hash}
+        })
+        checks.append({
+            "id": "registry_lookup",
+            "label": "Signed registry lookup",
+            "status": "failed",
+            "message": "No matching record found in registry",
+            "detail": None
+        })
 
     now_str = datetime.now(timezone.utc).isoformat()
     # Save verification record in DB
@@ -132,9 +198,15 @@ async def start_verification(
         "confidence_level": confidence,
         "evidence_score": evidence_score,
         "doc_id": detected_doc_id or (doc.get("doc_id") if doc else None),
-        "file_hash": file_hash,
+        "issuer_name": issuer["name"] if doc and issuer else None,
+        "doc_type": doc["doc_type"] if doc else None,
+        "uploaded_file_hash": file_hash,
+        "expected_file_hash": doc["file_hash"] if doc else None,
+        "hash_match": exact_match if doc else False,
+        "signature_valid": sig_valid if doc else False,
         "checks": checks,
         "reasons": reasons,
+        "fields": [],
         "registry_record": {
             "doc_id": doc["doc_id"],
             "doc_type": doc["doc_type"],
