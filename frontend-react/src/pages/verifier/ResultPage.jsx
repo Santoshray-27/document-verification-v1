@@ -124,6 +124,34 @@ export default function ResultPage() {
         </section>
       )}
 
+      {/* ---- semantic checks ---- */}
+      {r.semantic_findings?.length > 0 && (
+        <section className="glass p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="section-title">Semantic consistency checks</h3>
+            <span className="chip border border-white/10 bg-white/[0.04] text-[9px] text-slate-400">advisory only</span>
+          </div>
+          <ul className="space-y-3">
+            {r.semantic_findings.map((f, i) => (
+              <li key={i} className={`rounded-lg border px-4 py-3 ${f.severity === 'ERROR' ? 'border-rose-500/30 bg-rose-500/10' : f.severity === 'WARNING' ? 'border-amber-400/30 bg-amber-500/10' : 'border-emerald-400/30 bg-emerald-500/10'}`}>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${f.severity === 'ERROR' ? 'text-rose-400' : f.severity === 'WARNING' ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    {f.status}
+                  </span>
+                  <span className="text-sm font-semibold text-slate-200">{f.field.replace(/_/g, ' ')}</span>
+                </div>
+                <p className="mt-1.5 text-sm text-slate-400">{f.reason}</p>
+                {f.observed_value && (
+                  <div className="mt-2 text-xs text-slate-500">
+                    Observed: <span className="font-medium text-slate-300">{f.observed_value}</span> {f.expected_rule && `· Expected: ${f.expected_rule}`}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* ---- heatmap ---- */}
       <section>
         <HeatmapViewer visual={r.visual} snapshotUrl={r.doc_id ? `/static/snapshots/${r.doc_id}.png` : null} />

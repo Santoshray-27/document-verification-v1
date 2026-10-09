@@ -109,8 +109,10 @@ def diff(snapshot_png_b64: str, uploaded_bytes: bytes) -> dict:
         intensity = float(roi.mean()) / 255.0
         x0, y0 = max(0, x - BOX_PAD), max(0, y - BOX_PAD)
         x1, y1 = min(w, x + bw + BOX_PAD), min(h, y + bh + BOX_PAD)
-        cv2.rectangle(overlay, (x0, y0), (x1, y1), (0, 0, 235), 2)
-        cv2.rectangle(overlay, (x0, y0), (x0 + 3, y0 + 14), (0, 0, 235), -1)
+        
+        # Draw translucent fill on overlay (soft coral BGR: 119, 119, 255)
+        cv2.rectangle(overlay, (x0, y0), (x1, y1), (119, 119, 255), -1)
+        
         regions.append(
             {
                 "x": int(x0), "y": int(y0), "w": int(x1 - x0), "h": int(y1 - y0),
@@ -120,7 +122,13 @@ def diff(snapshot_png_b64: str, uploaded_bytes: bytes) -> dict:
             }
         )
     regions.sort(key=lambda r: r["area_ratio"], reverse=True)
-    heat = cv2.addWeighted(overlay, 0.85, heat, 0.15, 0)
+    
+    # Blend overlay with 35% opacity
+    heat = cv2.addWeighted(overlay, 0.35, heat, 0.65, 0)
+    
+    # Draw a subtle but solid outline on top of the blended image
+    for r in regions:
+        cv2.rectangle(heat, (r["x"], r["y"]), (r["x"] + r["w"], r["y"] + r["h"]), (119, 119, 255), 1)
 
     # side-by-side composite for the UI (original | uploaded | difference)
     sep = np.full((h, 6, 3), 30, dtype=np.uint8)

@@ -11,6 +11,7 @@ const audit = require('./audit.service');
 const engine = require('./verdict.engine');
 const reportSvc = require('./report.service');
 const llmSvc = require('./llm.service');
+const semanticEngine = require('./semantic.engine');
 const { sanitizeText } = require('./sanitize');
 
 const STEPS = [
@@ -26,6 +27,7 @@ const STEPS = [
   { id: 'qr_content', label: 'Checking QR / content consistency' },
   { id: 'metadata', label: 'Inspecting metadata' },
   { id: 'visual_diff', label: 'Visual difference analysis' },
+  { id: 'semantic_checks', label: 'Semantic consistency checks' },
   { id: 'verdict', label: 'Composing verdict' },
   { id: 'ai_explanation', label: 'Generating AI explanation' },
   { id: 'report', label: 'Generating report' },
@@ -176,6 +178,10 @@ async function runVerify(jobId, { buffer, originalName, manualDocId, verifier })
     }
   }
 
+  jobs.start(jobId, 'semantic_checks', 'Checking semantic consistency');
+  const semantic_findings = semanticEngine.checkSemantics(registryFields, analysis?.ocr?.fields || {});
+  jobs.finish(jobId, 'semantic_checks', semantic_findings.length > 0 ? (semantic_findings.some(f => f.severity === 'ERROR') ? 'failed' : 'warning') : 'passed', `Generated ${semantic_findings.length} semantic finding(s)`);
+
   // 11. verdict (deterministic)
   jobs.start(jobId, 'verdict', 'Applying the rule engine');
   const decision = engine.decide({
@@ -229,6 +235,7 @@ async function runVerify(jobId, { buffer, originalName, manualDocId, verifier })
     registry_fields: record ? registryFields : null,
     ocr_confidence: ocr?.avg_confidence ?? null,
     visual: diff ? { ssim_score: diff.ssim_score, region_count: diff.region_count, regions: diff.changed_regions, heatmap_url: diff.heatmap_url, combined_url: diff.combined_url } : null,
+    semantic_findings: semantic_findings,
     metadata: metadata || null,
     worker_available: workerAvailable,
     report_url: reportUrl ? `/api/reports/${saved.id}` : null,
@@ -281,7 +288,7 @@ function finishWith(jobId, decision, meta) {
     confidence_level: decision.confidence_level, evidence_score: decision.evidence_score,
     checks: decision.checks, reasons: decision.reasons, uploaded_file_hash: meta.fileHash,
     expected_file_hash: null, hash_match: null, signature_valid: null, fields: [],
-    registry_fields: null, ocr_confidence: null, visual: null, metadata: null,
+    registry_fields: null, ocr_confidence: null, visual: null, semantic_findings: [], metadata: null,
     worker_available: null, report_url: null, duration_ms: meta.durationMs, created_at: saved.created_at,
   });
 }
