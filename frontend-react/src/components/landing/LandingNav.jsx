@@ -47,7 +47,11 @@ export default function LandingNav() {
   function scrollTo(href) {
     setMenuOpen(false);
     const el = document.querySelector(href);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (el) {
+      const yOffset = -95;
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    }
   }
 
   return (
@@ -58,9 +62,15 @@ export default function LandingNav() {
         style={{ scaleX: scrollYProgress, willChange: 'transform' }}
       />
       
-      <div className="fixed top-0 left-0 w-full z-50 px-4 transition-all duration-300" style={{ paddingTop: scrolled ? '0.75rem' : '1.25rem' }}>
+      <header
+        className={`fixed top-0 left-0 w-full z-50 px-4 transition-all duration-300 ${
+          scrolled
+            ? 'py-2.5 bg-background/85 dark:bg-stone-950/85 backdrop-blur-md border-b border-border/40 shadow-xs'
+            : 'pt-4 pb-2 bg-transparent'
+        }`}
+      >
         <nav
-          className="mx-auto flex w-full max-w-5xl items-center justify-between rounded-full px-5 py-2.5 transition-all duration-300 border border-border/80 bg-background/85 dark:bg-card/85 backdrop-blur-md shadow-sm"
+          className="mx-auto flex w-full max-w-5xl items-center justify-between rounded-full px-5 py-2 transition-all duration-300 border border-border/80 bg-card/95 dark:bg-stone-900/95 shadow-sm"
           aria-label="Main Navigation"
         >
           {/* Logo */}
@@ -174,7 +184,7 @@ export default function LandingNav() {
             </div>
           </div>
         )}
-      </div>
+      </header>
     </>
   );
 }

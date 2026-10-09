@@ -184,7 +184,7 @@ body:has(.landing-root) {
 }
 
 .landing-root [id] {
-  scroll-margin-top: 80px;
+  scroll-margin-top: 100px;
 }
 
 .landing-root .overflow-hidden::-webkit-scrollbar {
