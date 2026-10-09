@@ -78,7 +78,8 @@ function ensure(dir) { fs.mkdirSync(path.join(SAMPLES, dir), { recursive: true }
 
 async function main() {
   ['copies', 'altered', 'forged', 'unverifiable', 'revoked'].forEach(ensure);
-  const genuinePath = path.join(STORAGE, 'issued', `${docId}.pdf`);
+  const genuinePath = path.join(STORAGE, 'issued', `${docId}.pdf`).replace(/\\/g, '/');
+  const samplesDir = SAMPLES.replace(/\\/g, '/');
   if (!fs.existsSync(genuinePath)) throw new Error('genuine pdf not found: ' + genuinePath);
   const genuine = fs.readFileSync(genuinePath);
   console.log(`genuine: ${docId}.pdf (${(genuine.length / 1024).toFixed(1)} KB)`);
@@ -90,10 +91,10 @@ src = fitz.open("${genuinePath}")
 # 1. re-save (round-trips through a different writer -> different bytes, same layout)
 out = fitz.open()
 out.insert_pdf(src)
-out.save("${path.join(SAMPLES, 'copies', 'resave.pdf')}", garbage=3, deflate=True, clean=True)
+out.save("${samplesDir}/copies/resave.pdf", garbage=3, deflate=True, clean=True)
 # 2. screenshot: rasterise the page
 pix = src.load_page(0).get_pixmap(dpi=150, alpha=False)
-pix.save("${path.join(SAMPLES, 'copies', 'screenshot.png')}")
+pix.save("${samplesDir}/copies/screenshot.png")
 # 3. scan: jpeg, greyscale-ish, slight noise + rotation
 import numpy as np, cv2
 img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
@@ -103,7 +104,7 @@ img = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]), borderValue=(255,255,
 img = cv2.resize(img, None, fx=0.85, fy=0.85, interpolation=cv2.INTER_AREA)
 noise = np.random.normal(0, 3, img.shape).astype(np.int16)
 img = np.clip(img.astype(np.int16) + noise, 0, 255).astype(np.uint8)
-cv2.imwrite("${path.join(SAMPLES, 'copies', 'scan.jpg')}", img, [cv2.IMWRITE_JPEG_QUALITY, 72])
+cv2.imwrite("${samplesDir}/copies/scan.jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 72])
 print("copies: resave.pdf, screenshot.png, scan.jpg")
 `);
 
@@ -126,7 +127,7 @@ def replace(old, new, out):
     doc.save(out, garbage=3, deflate=True)
     print("  wrote", out.split("/")[-1], f"({len(hits)} hit)")
 
-replace("Aarav Sharma", "Rohan Verma", "${path.join(SAMPLES, 'altered', 'name-edited.pdf')}")
+replace("Aarav Sharma", "Rohan Verma", "${samplesDir}/altered/name-edited.pdf")
 doc2 = fitz.open("${genuinePath}"); page = doc2.load_page(0)
 hits = page.search_for("A+")
 for r in hits: page.add_redact_annot(r, fill=(1,1,1))
@@ -134,7 +135,7 @@ page.apply_redactions()
 if hits:
     r = hits[0]
     page.insert_text((r.x0, r.y1 - r.height*0.18), "C", fontsize=max(8.0, r.height*0.86), fontname="hebo", color=(0.1,0.14,0.22))
-doc2.save("${path.join(SAMPLES, 'altered', 'grade-edited.pdf')}", garbage=3, deflate=True)
+doc2.save("${samplesDir}/altered/grade-edited.pdf", garbage=3, deflate=True)
 print("  wrote grade-edited.pdf")
 `);
 
@@ -152,7 +153,7 @@ for r in hits:
     x0,y0,x1,y1 = int(r.x0*scale)-4, int(r.y0*scale)-4, int(r.x1*scale)+4, int(r.y1*scale)+4
     cv2.rectangle(img, (x0,y0), (x1,y1), (255,255,255), -1)
     cv2.putText(img, "Rohan Verma", (x0, int(r.y1*scale)-4), cv2.FONT_HERSHEY_SIMPLEX, 1.15, (20,25,45), 2, cv2.LINE_AA)
-cv2.imwrite("${path.join(SAMPLES, 'altered', 'image-name-edit.png')}", img)
+cv2.imwrite("${samplesDir}/altered/image-name-edit.png", img)
 print("  wrote image-name-edit.png")
 `);
 
@@ -187,7 +188,7 @@ import numpy as np, cv2
 img = np.full((1200, 900, 3), 255, np.uint8)
 cv2.rectangle(img, (60,60), (840,1140), (10,31,68), 3)
 cv2.putText(img, "SOME RANDOM DOCUMENT", (180, 400), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (10,31,68), 2, cv2.LINE_AA)
-cv2.imwrite("${path.join(SAMPLES, 'forged', 'no-qr-blank.png')}", img)
+cv2.imwrite("${samplesDir}/forged/no-qr-blank.png", img)
 print("forged: no-qr-blank.png")
 `);
 
