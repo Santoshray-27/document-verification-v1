@@ -1,11 +1,16 @@
+import React, { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, CalendarDays, Check, Copy, Download, FileText, QrCode, Sparkles } from 'lucide-react';
+import { AlertCircle, CalendarDays, Check, Copy, Download, FileText, QrCode, Sparkles, Wand2 } from 'lucide-react';
 import api, { assetUrl, errMsg } from '../../api/axios';
 import Stepper from '../../components/Stepper.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { copyText, DOC_TYPES, fmtDate, shortHash } from '../../lib/format';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Label } from '../../components/ui/label.jsx';
+import { Select } from '../../components/ui/select.jsx';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card.jsx';
 
 const BLANK = {
   doc_type: 'academic_certificate',
@@ -18,10 +23,10 @@ const BLANK = {
 };
 
 const FIELDS = [
-  { key: 'name', label: 'Recipient name', placeholder: 'Aarav Sharma', required: true },
-  { key: 'certificate_number', label: 'Certificate ID', placeholder: 'AGN-2026-001', required: true, mono: true },
-  { key: 'course', label: 'Course / title', placeholder: 'B.Tech Computer Science', required: true },
-  { key: 'grade', label: 'Grade', placeholder: 'A+', required: true },
+  { key: 'name', label: 'Recipient Name', placeholder: 'e.g. Aarav Sharma', required: true },
+  { key: 'certificate_number', label: 'Certificate / Credential ID', placeholder: 'e.g. AGN-2026-001', required: true, mono: true },
+  { key: 'course', label: 'Course / Degree Title', placeholder: 'e.g. B.Tech Computer Science', required: true },
+  { key: 'grade', label: 'Grade / Classification', placeholder: 'e.g. First Class Honours / A+', required: true },
 ];
 
 export default function IssueDocument() {
@@ -38,10 +43,10 @@ export default function IssueDocument() {
   const errors = useMemo(() => {
     const e = {};
     FIELDS.forEach((f) => {
-      if (f.required && !String(form[f.key] || '').trim()) e[f.key] = 'Required';
+      if (f.required && !String(form[f.key] || '').trim()) e[f.key] = 'Required field';
     });
-    if (form.issue_date && !/^\d{4}-\d{2}-\d{2}$/.test(form.issue_date)) e.issue_date = 'Use YYYY-MM-DD';
-    if (form.expires_at && form.expires_at <= form.issue_date) e.expires_at = 'Must be after the issue date';
+    if (form.issue_date && !/^\d{4}-\d{2}-\d{2}$/.test(form.issue_date)) e.issue_date = 'Use format YYYY-MM-DD';
+    if (form.expires_at && form.expires_at <= form.issue_date) e.expires_at = 'Expiry must be after issue date';
     return e;
   }, [form]);
 
@@ -55,7 +60,7 @@ export default function IssueDocument() {
   const submit = async (e) => {
     e.preventDefault();
     setTouched({ name: 1, certificate_number: 1, course: 1, grade: 1, issue_date: 1, expires_at: 1 });
-    if (!valid) return setError('Fix the highlighted fields first.');
+    if (!valid) return setError('Please complete the required fields correctly.');
     setError('');
     setPolling(true);
     setResult(null);
@@ -86,7 +91,7 @@ export default function IssueDocument() {
         if (data.status === 'done') {
           setResult(data.result);
           setPolling(false);
-          toast.success('Certificate issued and signed');
+          toast.success('Certificate issued, stamped and registered');
           return;
         }
         if (data.status === 'failed') {
@@ -102,110 +107,174 @@ export default function IssueDocument() {
       }
       await new Promise((r) => setTimeout(r, 500));
     }
-    setError('Issuing timed out');
+    setError('Issuing operation timed out');
     setPolling(false);
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      <header className="mb-8">
-        <p className="section-title">Issuer</p>
-        <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-white sm:text-3xl">Issue a new document</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-          Fill the fields, watch every cryptographic step run, then download the signed PDF. The QR inside it points at a public verification
-          page — it never contains the file hash, because the hash cannot exist before the PDF does.
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="border-b border-border pb-6">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Issuer Portal
+        </span>
+        <h1 className="mt-1 font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+          Issue a New Verifiable Document
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          Complete recipient details to render the certificate, stamp the deterministic verification QR, sign the manifest via ECDSA P-256, and register the cryptographic SHA-256 record.
         </p>
-      </header>
+      </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        {/* -------- form -------- */}
-        <form onSubmit={submit} className="glass h-fit p-6">
-          <label className="label" htmlFor="doc_type">Document type</label>
-          <select id="doc_type" className="input mb-5" value={form.doc_type} onChange={(e) => set('doc_type', e.target.value)}>
-            {DOC_TYPES.map((t) => (
-              <option key={t.id} value={t.id} className="bg-navy-800">{t.label}</option>
-            ))}
-          </select>
-          <p className="mb-5 -mt-3 text-[11px] text-slate-500">
-            Only the academic certificate template is fully built; the others reuse the same signing pipeline.
-          </p>
+      <div className="grid gap-8 lg:grid-cols-12 items-start">
+        {/* Form Column */}
+        <form onSubmit={submit} className="space-y-6 lg:col-span-7">
+          <Card>
+            <CardHeader>
+              <CardTitle>Document Type & Category</CardTitle>
+              <CardDescription>Select the template to generate and sign</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Label htmlFor="doc_type" className="mb-2 block">Document Type</Label>
+              <Select
+                id="doc_type"
+                value={form.doc_type}
+                onChange={(e) => set('doc_type', e.target.value)}
+              >
+                {DOC_TYPES.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </Select>
+            </CardContent>
+          </Card>
 
-          <div className="space-y-4">
-            {FIELDS.map((f) => (
-              <div key={f.key}>
-                <label className="label" htmlFor={f.key}>{f.label}</label>
-                <div className="relative">
-                  <input
+          <Card>
+            <CardHeader>
+              <CardTitle>Recipient & Certificate Details</CardTitle>
+              <CardDescription>Core cryptographic metadata embedded in the manifest</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {FIELDS.map((f) => (
+                <div key={f.key}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Label htmlFor={f.key}>{f.label}</Label>
+                    {f.key === 'certificate_number' && (
+                      <button
+                        type="button"
+                        onClick={suggestId}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-400 hover:underline"
+                      >
+                        <Wand2 size={12} /> Suggest ID
+                      </button>
+                    )}
+                  </div>
+                  <Input
                     id={f.key}
-                    className={`input ${f.mono ? 'mono pr-24' : ''} ${touched[f.key] && errors[f.key] ? 'border-rose-400/60' : ''}`}
                     value={form[f.key]}
                     placeholder={f.placeholder}
+                    className={f.mono ? 'font-mono' : ''}
                     onChange={(e) => set(f.key, e.target.value)}
                     onBlur={() => setTouched((t) => ({ ...t, [f.key]: 1 }))}
                   />
-                  {f.key === 'certificate_number' && (
-                    <button type="button" onClick={suggestId} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-gold-400 transition hover:bg-white/10">
-                      Suggest
-                    </button>
+                  {touched[f.key] && errors[f.key] && (
+                    <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors[f.key]}</p>
                   )}
                 </div>
-                {touched[f.key] && errors[f.key] && <p className="mt-1.5 text-xs text-rose-300">{errors[f.key]}</p>}
-              </div>
-            ))}
+              ))}
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="label" htmlFor="issue_date">Issue date</label>
-                <input id="issue_date" type="date" className="input" value={form.issue_date} onChange={(e) => set('issue_date', e.target.value)} />
-                {touched.issue_date && errors.issue_date && <p className="mt-1.5 text-xs text-rose-300">{errors.issue_date}</p>}
+              <div className="grid gap-4 sm:grid-cols-2 pt-2">
+                <div>
+                  <Label htmlFor="issue_date" className="mb-1.5 block">Issue Date</Label>
+                  <Input
+                    id="issue_date"
+                    type="date"
+                    value={form.issue_date}
+                    onChange={(e) => set('issue_date', e.target.value)}
+                  />
+                  {touched.issue_date && errors.issue_date && (
+                    <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.issue_date}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="expires_at" className="mb-1.5 block">Expiry Date (Optional)</Label>
+                  <Input
+                    id="expires_at"
+                    type="date"
+                    value={form.expires_at}
+                    onChange={(e) => set('expires_at', e.target.value)}
+                  />
+                  {touched.expires_at && errors.expires_at && (
+                    <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.expires_at}</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="label" htmlFor="expires_at">Expiry (optional)</label>
-                <input id="expires_at" type="date" className="input" value={form.expires_at} onChange={(e) => set('expires_at', e.target.value)} />
-                {touched.expires_at && errors.expires_at && <p className="mt-1.5 text-xs text-rose-300">{errors.expires_at}</p>}
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {error && (
-            <div role="alert" className="mt-5 flex items-start gap-2.5 rounded-xl border border-rose-400/25 bg-rose-500/10 px-3.5 py-3 text-sm text-rose-200">
+            <div
+              role="alert"
+              className="flex items-start gap-2.5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs font-medium text-rose-700 dark:text-rose-300"
+            >
               <AlertCircle size={16} className="mt-0.5 shrink-0" />
-              {error}
+              <span>{error}</span>
             </div>
           )}
 
-          <button type="submit" disabled={!valid || polling} className="btn-primary mt-6 w-full">
-            {polling ? 'Issuing…' : 'Issue document'}
-          </button>
-          <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">
-            The private key never leaves the server. Only the signature is stored.
-          </p>
+          <div className="rounded-2xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your organization's private key never leaves the secure signing enclave.
+            </p>
+            <Button
+              type="submit"
+              variant="default"
+              size="lg"
+              disabled={!valid || polling}
+              loading={polling}
+              className="shrink-0"
+            >
+              Issue & Sign Document
+            </Button>
+          </div>
         </form>
 
-        {/* -------- live preview -------- */}
-        <div className="lg:sticky lg:top-24 lg:h-fit">
-          <p className="section-title mb-3">Live preview</p>
+        {/* Live Preview Column */}
+        <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-3">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Document Rendering Preview
+          </span>
           <Preview form={form} />
         </div>
       </div>
 
-      {/* -------- stepper overlay -------- */}
+      {/* Live Stepper overlay during polling */}
       <AnimatePresence>
         {job && !result && (
           <Stepper
             overlay
             steps={job.steps}
             progress={job.progress}
-            title="Issuing and signing your document"
-            subtitle="Every step below actually ran — nothing is simulated."
+            title="Issuing and Signing Document"
+            subtitle="Executing deterministic cryptographic pipeline..."
             error={job.error}
           />
         )}
       </AnimatePresence>
 
-      {/* -------- success -------- */}
+      {/* Success Modal */}
       <AnimatePresence>
-        {result && <SuccessCard result={result} onClose={() => { setResult(null); setJob(null); setForm(BLANK); }} />}
+        {result && (
+          <SuccessCard
+            result={result}
+            onClose={() => {
+              setResult(null);
+              setJob(null);
+              setForm(BLANK);
+            }}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
@@ -214,13 +283,13 @@ export default function IssueDocument() {
 function SuccessCard({ result, onClose }) {
   const toast = useToast();
   const copy = async (text, what) => {
-    if (await copyText(text)) toast.success(`${what} copied`);
+    if (await copyText(text)) toast.success(`${what} copied to clipboard`);
     else toast.error('Could not copy');
   };
 
   return (
     <motion.div
-      className="fixed inset-0 z-[95] flex items-center justify-center bg-navy-950/85 p-4 backdrop-blur-md"
+      className="fixed inset-0 z-[95] flex items-center justify-center bg-black/65 p-4 backdrop-blur-xs"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -228,73 +297,105 @@ function SuccessCard({ result, onClose }) {
       aria-modal="true"
     >
       <motion.div
-        initial={{ scale: 0.94, y: 18, opacity: 0 }}
+        initial={{ scale: 0.94, y: 14, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.96, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-        className="glass max-h-[90vh] w-full max-w-2xl overflow-y-auto p-7"
+        transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-border bg-card p-6 sm:p-8 text-card-foreground shadow-2xl"
       >
-        <div className="flex items-center gap-3.5">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-500/12 text-emerald-400">
-            <Check size={22} />
+        <div className="flex items-center gap-3.5 border-b border-border pb-5">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+            <Check size={24} strokeWidth={2.6} />
           </span>
           <div>
-            <h2 className="text-xl font-bold text-white">Document issued</h2>
-            <p className="text-sm text-slate-400">Signed with ECDSA P-256 and stored in the registry.</p>
+            <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
+              Document Successfully Issued
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Cryptographically signed with ECDSA P-256 and committed to the registry ledger.
+            </p>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_auto]">
+        <div className="mt-6 grid gap-6 sm:grid-cols-[1fr_200px]">
           <div className="space-y-2.5">
-            <Row label="Recipient" value={result.fields?.name} />
-            <Row label="Certificate ID" value={result.fields?.certificate_number} mono />
-            <Row label="Issuer" value={result.issuer_name} />
-            <Row label="Issued" value={fmtDate(result.issued_at, true)} />
-            <Row label="Document ID" value={result.doc_id} mono onCopy={() => copy(result.doc_id, 'Document ID')} />
-            <Row label="File hash" value={shortHash(result.file_hash, 16, 10)} mono onCopy={() => copy(result.file_hash, 'File hash')} />
-            <Row label="Fields hash" value={shortHash(result.fields_hash, 16, 10)} mono onCopy={() => copy(result.fields_hash, 'Fields hash')} />
-            <Row label="Signing key" value={result.kid} mono />
+            <SuccessRow label="Recipient" value={result.fields?.name} />
+            <SuccessRow label="Certificate ID" value={result.fields?.certificate_number} mono />
+            <SuccessRow label="Issuer" value={result.issuer_name} />
+            <SuccessRow label="Issued On" value={fmtDate(result.issued_at, true)} />
+            <SuccessRow
+              label="Document ID"
+              value={result.doc_id}
+              mono
+              onCopy={() => copy(result.doc_id, 'Document ID')}
+            />
+            <SuccessRow
+              label="File SHA-256"
+              value={shortHash(result.file_hash, 14, 8)}
+              mono
+              onCopy={() => copy(result.file_hash, 'File hash')}
+            />
+            <SuccessRow label="Signing Key" value={result.kid} mono />
           </div>
-          <div className="flex flex-col items-center gap-2 rounded-xl border border-white/[0.07] bg-navy-950/50 p-4">
-            <QrCode size={20} className="text-gold-400" />
-            <p className="text-center text-[10px] uppercase tracking-wider text-slate-500">QR inside the PDF</p>
-            <code className="mono max-w-[180px] break-all text-center text-[9px] leading-relaxed text-slate-400">{result.verify_url}</code>
+
+          <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-muted/40 p-4 text-center">
+            <div className="h-10 w-10 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center justify-center">
+              <QrCode size={22} />
+            </div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Verification QR
+            </p>
+            <code className="font-mono text-[9px] break-all text-muted-foreground max-w-[160px] leading-tight bg-background/80 p-1.5 rounded border border-border">
+              {result.verify_url}
+            </code>
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-2.5">
-          <a href={assetUrl(result.pdf_url)} download className="btn-primary">
-            <Download size={16} />
-            Download PDF
+        <div className="mt-7 flex flex-wrap items-center gap-3 border-t border-border pt-6">
+          <a href={assetUrl(result.pdf_url)} download>
+            <Button variant="default">
+              <Download size={16} /> Download Signed PDF
+            </Button>
           </a>
-          <button onClick={() => copy(result.verify_url, 'Verification link')} className="btn-ghost">
-            <Copy size={15} />
-            Copy verification link
-          </button>
-          <Link to="/issuer/documents" className="btn-ghost">
-            <FileText size={15} />
-            My documents
+          <Button variant="outline" onClick={() => copy(result.verify_url, 'Verification URL')}>
+            <Copy size={15} /> Copy Verification Link
+          </Button>
+          <Link to="/issuer/documents">
+            <Button variant="ghost">
+              <FileText size={15} /> My Documents
+            </Button>
           </Link>
-          <button onClick={onClose} className="btn-ghost ml-auto">Issue another</button>
+          <Button variant="secondary" onClick={onClose} className="ml-auto">
+            Issue Another
+          </Button>
         </div>
 
-        <p className="mt-5 flex items-start gap-2 rounded-xl border border-gold-400/20 bg-gold-500/[0.06] px-3.5 py-3 text-xs leading-relaxed text-gold-200/90">
-          <Sparkles size={14} className="mt-0.5 shrink-0" />
-          For a judge's phone to open the QR, set <code className="mono mx-1">PUBLIC_BASE_URL</code> to your tunnel URL and re-issue — a
-          localhost link will not resolve off this machine.
-        </p>
+        <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
+          <Sparkles size={15} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span>
+            The embedded QR encodes the public URL pointing to this document's registry manifest. External verifiers can scan the paper or digital PDF to immediately verify provenance.
+          </span>
+        </div>
       </motion.div>
     </motion.div>
   );
 }
 
-function Row({ label, value, mono, onCopy }) {
+function SuccessRow({ label, value, mono, onCopy }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3.5 py-2.5">
-      <span className="w-24 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>
-      <span className={`min-w-0 flex-1 truncate text-sm text-slate-200 ${mono ? 'mono text-xs' : ''}`}>{value || '—'}</span>
+    <div className="flex items-center gap-3 rounded-xl border border-border/80 bg-muted/30 px-3.5 py-2">
+      <span className="w-24 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
+      <span className={`min-w-0 flex-1 truncate text-xs font-medium text-foreground ${mono ? 'font-mono' : ''}`}>
+        {value || '—'}
+      </span>
       {onCopy && (
-        <button onClick={onCopy} className="shrink-0 rounded p-1 text-slate-500 transition hover:bg-white/10 hover:text-slate-200" aria-label={`Copy ${label}`}>
+        <button
+          onClick={onCopy}
+          className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label={`Copy ${label}`}
+        >
           <Copy size={13} />
         </button>
       )}
@@ -302,48 +403,55 @@ function Row({ label, value, mono, onCopy }) {
   );
 }
 
-/** HTML/CSS mirror of the ReportLab template, so the preview matches the real PDF. */
+/** Certificate preview */
 function Preview({ form }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/[0.09] bg-[#FBFBFD] text-slate-900 shadow-glass">
-      <div className="pointer-events-none absolute inset-3 rounded-lg border-2 border-navy-700" />
-      <div className="pointer-events-none absolute inset-[18px] rounded border border-gold-600/70" />
-      <div className="relative px-9 py-10 text-center">
-        <p className="text-lg font-bold tracking-[0.28em] text-navy-700">AGNITIA</p>
-        <p className="mt-1 text-[8px] tracking-[0.24em] text-gold-600">PROOF IN EVERY PIXEL</p>
-        <div className="mx-auto mt-2.5 h-px w-32 bg-gold-600/70" />
-        <p className="mt-3 text-[11px] font-semibold text-navy-600">Meridian Institute of Technology</p>
-        <p className="text-[8px] italic text-slate-500">Digitally signed and registered document</p>
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-[#FCFCFD] dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-sm">
+      <div className="pointer-events-none absolute inset-3 rounded-xl border-2 border-stone-800/20 dark:border-stone-700/40" />
+      <div className="pointer-events-none absolute inset-[18px] rounded border border-amber-500/40" />
+      <div className="relative px-7 py-9 text-center">
+        <p className="font-display text-base font-bold tracking-[0.25em] text-stone-900 dark:text-stone-100">
+          AGNITIA
+        </p>
+        <p className="mt-1 text-[8px] font-semibold tracking-[0.2em] text-amber-600 dark:text-amber-400">
+          PROOF IN EVERY PIXEL
+        </p>
+        <div className="mx-auto mt-2 h-px w-28 bg-amber-500/50" />
+        <p className="mt-3 text-xs font-semibold text-stone-800 dark:text-stone-200">
+          Meridian Institute of Technology
+        </p>
+        <p className="text-[9px] italic text-muted-foreground">Digitally signed credential</p>
 
-        <p className="mt-8 text-[13px] font-bold tracking-wide text-navy-700">CERTIFICATE OF COMPLETION</p>
-        <p className="mt-4 text-[9px] text-slate-500">This is to certify that</p>
-        <p className="mt-2 font-serif text-2xl font-bold text-slate-900">{form.name || 'Recipient Name'}</p>
-        <div className="mx-auto mt-1 h-px w-52 bg-gold-600/80" />
-        {form.course && <p className="mt-4 text-[10px] text-slate-700">has successfully completed {form.course}</p>}
-        {form.grade && <p className="mt-1.5 text-[10px] font-bold text-navy-700">Grade: {form.grade}</p>}
-        {form.issue_date && <p className="mt-1.5 text-[10px] text-slate-700">Issued on {form.issue_date}</p>}
+        <p className="mt-7 text-xs font-bold tracking-wider text-amber-700 dark:text-amber-400 uppercase">
+          CERTIFICATE OF COMPLETION
+        </p>
+        <p className="mt-3 text-[10px] text-muted-foreground">This is to certify that</p>
+        <p className="mt-1.5 font-display text-xl font-bold text-stone-900 dark:text-stone-100">
+          {form.name || 'Recipient Name'}
+        </p>
+        <div className="mx-auto mt-1 h-px w-44 bg-stone-300 dark:bg-stone-700" />
+        {form.course && <p className="mt-3 text-[11px] text-stone-700 dark:text-stone-300">has completed {form.course}</p>}
+        {form.grade && <p className="mt-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400">Grade: {form.grade}</p>}
+        {form.issue_date && <p className="mt-1 text-[10px] text-muted-foreground">Issued on {form.issue_date}</p>}
 
-        <div className="mx-auto mt-6 flex w-full max-w-sm items-end justify-between gap-3 rounded-md bg-slate-100/80 px-3 py-2.5 text-left">
+        <div className="mx-auto mt-6 flex w-full max-w-xs items-end justify-between gap-3 rounded-xl bg-stone-100 dark:bg-stone-800/60 px-3 py-2 text-left border border-border">
           <div className="space-y-1">
-            {[
-              ['CERTIFICATE ID', form.certificate_number || '—'],
-              ['ISSUE DATE', form.issue_date || '—'],
-            ].map(([k, v]) => (
-              <div key={k} className="flex gap-2">
-                <span className="w-20 text-[6px] font-bold tracking-wide text-slate-500">{k}</span>
-                <span className="mono text-[7px] text-slate-800">{v}</span>
-              </div>
-            ))}
+            <div className="flex gap-2 text-[8px]">
+              <span className="font-semibold text-muted-foreground">CREDENTIAL ID:</span>
+              <span className="font-mono text-stone-800 dark:text-stone-200">{form.certificate_number || '—'}</span>
+            </div>
+            <div className="flex gap-2 text-[8px]">
+              <span className="font-semibold text-muted-foreground">ISSUE DATE:</span>
+              <span className="font-mono text-stone-800 dark:text-stone-200">{form.issue_date || '—'}</span>
+            </div>
           </div>
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded border border-gold-600/60 bg-white text-center text-[6px] font-semibold leading-tight text-navy-700">
-            <span>
-              <QrCode size={22} className="mx-auto text-navy-700" />
-              SCAN TO VERIFY
-            </span>
-          </span>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100">
+            <QrCode size={20} />
+          </div>
         </div>
-        <p className="mt-3 flex items-center justify-center gap-1.5 text-[7px] text-slate-500">
-          <CalendarDays size={8} /> Agnitia · Proof in Every Pixel · signed ECDSA-P256
+
+        <p className="mt-3 flex items-center justify-center gap-1.5 text-[8px] text-muted-foreground">
+          <CalendarDays size={9} /> Agnitia Platform · Signed ECDSA-P256
         </p>
       </div>
     </div>
