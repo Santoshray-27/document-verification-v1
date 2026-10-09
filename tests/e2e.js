@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 
-const API = process.env.API || 'http://127.0.0.1:4000';
+const API = process.env.API || 'http://localhost:4000';
 const SAMPLES = path.join(__dirname, '../samples');
 
 function req(method, urlPath, { token, json, body, headers, rawPath } = {}) {

@@ -14,6 +14,8 @@ import PublicVerify from './pages/public/PublicVerify.jsx';
 import IssuerDirectory from './pages/public/IssuerDirectory.jsx';
 import AuditLog from './pages/admin/AuditLog.jsx';
 import FullScreenLoader from './components/FullScreenLoader.jsx';
+// NEW — premium marketing landing page (self-contained navbar+footer, no Layout wrapper)
+import LandingPage from './pages/landing/LandingPage.jsx';
 
 function RequireRole({ roles, children }) {
   const { user, loading } = useAuth();
@@ -30,8 +32,12 @@ export default function App() {
       {/* public routes — no chrome, no login */}
       <Route path="/public/verify/:docId" element={<PublicVerify />} />
 
+      {/* NEW: premium landing page — own navbar+footer, redirects logged-in users */}
+      <Route path="/" element={<LandingPage />} />
+
       <Route element={<Layout />}>
-        <Route path="/" element={<Landing />} />
+        {/* /home kept as alias so the old Landing.jsx is still accessible if needed */}
+        <Route path="/home" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/issuers" element={<IssuerDirectory />} />

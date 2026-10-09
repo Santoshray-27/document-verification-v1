@@ -56,9 +56,7 @@ test('ECDSA P-256 sign/verify round-trip with a generated key', () => {
   const p = path.join(__dirname, '../keys', `${kid}.pem`);
   assert.ok(fs.existsSync(p));
   const mode = (fs.statSync(p).mode & 0o777).toString(8);
-  if (require('os').platform() !== 'win32') {
-    assert.strictEqual(mode, '600');
-  }
+  assert.strictEqual(mode, '600');
   // the signer must never return or expose the private key material
   assert.ok(!c.signManifest(manifest, kid).includes('PRIVATE KEY'));
   assert.ok(!c.generateKeyPair.toString().includes('return { privateKeyPem: privateKey, publicKeyPem: publicKey, privatePath: privPath, privateKey'));

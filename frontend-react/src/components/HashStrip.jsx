@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 import { copyText } from '../lib/format';
+import { Badge } from './ui/badge';
 
 function Hash({ label, value, tone }) {
   const [copied, setCopied] = useState(false);
@@ -13,13 +14,17 @@ function Hash({ label, value, tone }) {
   };
   return (
     <div className="min-w-0 flex-1">
-      <p className="section-title mb-1.5">{label}</p>
-      <div className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-navy-950/50 px-3 py-2">
-        <code className="mono min-w-0 flex-1 truncate" style={{ color: tone }} title={value}>
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">{label}</p>
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3.5 py-2">
+        <code className="font-mono text-xs min-w-0 flex-1 truncate text-foreground font-medium" style={{ color: tone }} title={value}>
           {value}
         </code>
-        <button onClick={doCopy} className="shrink-0 rounded p-1 text-slate-500 transition hover:bg-white/10 hover:text-slate-200" aria-label={`Copy ${label}`}>
-          {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+        <button
+          onClick={doCopy}
+          className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          aria-label={`Copy ${label}`}
+        >
+          {copied ? <Check size={14} className="text-emerald-600 dark:text-emerald-400" /> : <Copy size={14} />}
         </button>
       </div>
     </div>
@@ -29,24 +34,25 @@ function Hash({ label, value, tone }) {
 /** Expected (registry) vs uploaded SHA-256, with a MATCH / MISMATCH pill. */
 export default function HashStrip({ expected, uploaded, match }) {
   return (
-    <div className="glass p-5">
+    <div className="rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-xs">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h3 className="section-title">SHA-256 file hashes</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          SHA-256 file hashes
+        </h3>
         {match === true && (
-          <span className="chip border border-emerald-400/40 bg-emerald-500/12 text-emerald-300">Match</span>
+          <Badge variant="genuine">Exact Byte Match</Badge>
         )}
         {match === false && (
-          <span className="chip border border-amber-400/40 bg-amber-500/12 text-amber-300">Mismatch</span>
+          <Badge variant="altered">Bytes Differ</Badge>
         )}
-        {match === null && <span className="chip border border-white/10 bg-white/[0.04] text-slate-400">No record</span>}
+        {match === null && <Badge variant="secondary">No Registry Record</Badge>}
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Hash label="Registry (expected)" value={expected} tone="#93A3C8" />
-        <Hash label="Your upload" value={uploaded} tone={match ? '#6EE7B7' : '#FCD34D'} />
+        <Hash label="Registry (expected)" value={expected} />
+        <Hash label="Your upload" value={uploaded} />
       </div>
-      <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
-        A mismatch means the bytes differ — a re-save, a scan or a screenshot all do that. It is not by itself proof of forgery;
-        the OCR and visual checks below decide that.
+      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+        A mismatch means the file bytes differ — print-to-PDF, rescanning, or screenshots modify file metadata without altering underlying content. Subsequent multi-layer checks evaluate semantic text and visual layout.
       </p>
     </div>
   );

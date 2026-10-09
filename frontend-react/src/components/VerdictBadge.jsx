@@ -1,6 +1,8 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Ban, Clock, CopyCheck, FileQuestion, FileWarning, FileX, HelpCircle, ShieldCheck, ShieldX } from 'lucide-react';
 import { CONFIDENCE_META, verdictMeta } from '../lib/format';
+import { Badge } from './ui/badge';
 
 const ICONS = {
   'shield-check': ShieldCheck,
@@ -30,44 +32,63 @@ export default function VerdictBadge({ verdict, confidence, size = 'lg' }) {
         <motion.span
           aria-hidden
           className="absolute inset-0 rounded-full"
-          style={{ background: `${meta.color}33` }}
-          animate={{ scale: [1, 1.35], opacity: [0.55, 0] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeOut' }}
+          style={{ background: `${meta.color}20` }}
+          animate={{ scale: [1, 1.25], opacity: [0.5, 0] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut' }}
         />
         <motion.span
-          initial={{ scale: 0.7, opacity: 0 }}
+          initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 240, damping: 18 }}
-          className="relative flex h-full w-full items-center justify-center rounded-full border-2"
-          style={{ borderColor: `${meta.color}66`, background: `${meta.color}14`, boxShadow: `0 0 44px -6px ${meta.color}55` }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          className="relative flex h-full w-full items-center justify-center rounded-full border-2 shadow-sm"
+          style={{
+            borderColor: meta.color,
+            background: `${meta.color}18`,
+          }}
         >
-          <Icon size={dim * 0.46} style={{ color: meta.color }} strokeWidth={1.9} />
+          <Icon size={dim * 0.46} style={{ color: meta.color }} strokeWidth={2} />
         </motion.span>
       </div>
 
       <motion.h1
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.12 }}
-        className={`mt-5 font-bold tracking-tight text-white ${size === 'lg' ? 'text-3xl sm:text-4xl' : 'text-xl'}`}
+        transition={{ delay: 0.1 }}
+        className={`mt-5 font-display font-bold tracking-tight text-foreground ${
+          size === 'lg' ? 'text-3xl sm:text-4xl' : 'text-xl'
+        }`}
       >
         {meta.label}
       </motion.h1>
 
-      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.18 }}
+        className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground"
+      >
         {meta.blurb}
       </motion.p>
 
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
+        initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.28 }}
+        transition={{ delay: 0.24 }}
         className="mt-4 flex flex-wrap items-center justify-center gap-2"
       >
-        <span className="chip border" style={{ borderColor: `${conf.color}55`, background: `${conf.color}14`, color: conf.color }}>
+        <span
+          className="chip border text-xs font-semibold"
+          style={{
+            borderColor: `${conf.color}40`,
+            background: `${conf.color}15`,
+            color: conf.color,
+          }}
+        >
           Confidence: {confidence}
         </span>
-        <span className="chip border border-white/10 bg-white/[0.04] text-slate-400 normal-case tracking-normal">{conf.note}</span>
+        <span className="chip border border-border bg-muted/60 text-muted-foreground normal-case tracking-normal text-xs">
+          {conf.note}
+        </span>
       </motion.div>
     </div>
   );
@@ -76,13 +97,19 @@ export default function VerdictBadge({ verdict, confidence, size = 'lg' }) {
 /** Compact pill for tables and lists. */
 export function VerdictPill({ verdict }) {
   const meta = verdictMeta(verdict);
+  const Icon = ICONS[meta.icon] || FileQuestion;
+
   return (
     <span
-      className="chip whitespace-nowrap border"
-      style={{ borderColor: `${meta.color}44`, background: `${meta.color}14`, color: meta.color }}
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border shadow-2xs whitespace-nowrap"
+      style={{
+        borderColor: `${meta.color}35`,
+        background: `${meta.color}15`,
+        color: meta.color,
+      }}
     >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta.color }} />
-      {meta.label}
+      <Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
+      <span>{meta.label}</span>
     </span>
   );
 }

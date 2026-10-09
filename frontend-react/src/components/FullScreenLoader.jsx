@@ -1,15 +1,16 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 import Logo from './Logo.jsx';
 
 export default function FullScreenLoader({ label = 'Loading' }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6">
-      <Logo size={44} />
-      <div className="flex items-center gap-2.5 text-sm text-slate-400">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background text-foreground">
+      <Logo size={44} animate={true} />
+      <div className="flex items-center gap-3 text-sm text-muted-foreground font-medium">
         <motion.span
-          className="h-3.5 w-3.5 rounded-full border-2 border-gold-400/30 border-t-gold-400"
+          className="h-4 w-4 rounded-full border-2 border-amber-500/30 border-t-amber-500"
           animate={{ rotate: 360 }}
-          transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+          transition={{ duration: 0.85, repeat: Infinity, ease: 'linear' }}
         />
         {label}
       </div>

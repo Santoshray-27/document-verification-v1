@@ -30,9 +30,11 @@ app.use(cors({
   origin(origin, cb) {
     if (!origin) return cb(null, true); // curl / same-origin / server-to-server
     const host = origin.replace(/^https?:\/\//, '').split('/')[0];
-    const allowed = config.allowedOrigins.some((o) => o.replace(/^https?:\/\//, '').split('/')[0] === host)
+    const isLocal = /^localhost(:\d+)?$/.test(host) || /^127\.0\.0\.1(:\d+)?$/.test(host);
+    const allowed = isLocal
+      || config.allowedOrigins.some((o) => o.replace(/^https?:\/\//, '').split('/')[0] === host)
       || /ngrok-free\.app$|trycloudflare\.com$/.test(host); // demo tunnels
-    return allowed ? cb(null, true) : cb(new Error(`Origin ${origin} is not allowed`));
+    return allowed ? cb(null, true) : cb(null, false);
   },
   credentials: true,
 }));
