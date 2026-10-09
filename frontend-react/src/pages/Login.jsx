@@ -90,6 +90,7 @@ export default function Login() {
           </ul>
         </motion.div>
 
+<<<<<<< HEAD
         {/* Login form card */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -204,12 +205,20 @@ export default function Login() {
             </div>
           </div>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            Need to verify an external document?{' '}
-            <Link to="/verify" className="font-medium text-amber-700 dark:text-amber-400 hover:underline underline-offset-2">
-              No account required
-            </Link>
-          </p>
+          <div className="mt-6 space-y-2 text-center text-xs text-muted-foreground">
+            <p>
+              Need to verify an external document?{' '}
+              <Link to="/verify" className="font-medium text-amber-700 dark:text-amber-400 hover:underline underline-offset-2">
+                No account required
+              </Link>
+            </p>
+            <p>
+              Want to become an issuer?{' '}
+              <Link to="/register" className="font-medium text-amber-700 dark:text-amber-400 hover:underline underline-offset-2">
+                Register your institution
+              </Link>
+            </p>
+          </div>
         </motion.div>
       </div>
     </div>

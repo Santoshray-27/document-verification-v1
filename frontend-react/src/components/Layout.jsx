@@ -249,7 +249,6 @@ export default function Layout() {
                 <NavLink to="/" className="shrink-0 flex items-center">
                   <Logo size={30} />
                 </NavLink>
-
                 <nav className="hidden items-center gap-1 md:flex">
                   <NavLink
                     to="/verify"
@@ -262,6 +261,18 @@ export default function Layout() {
                     }
                   >
                     Verify Document
+                  </NavLink>
+                  <NavLink
+                    to="/issuers"
+                    className={({ isActive }) =>
+                      `rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+                        isActive
+                          ? 'bg-muted text-foreground font-semibold'
+                          : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                      }`
+                    }
+                  >
+                    Issuer Directory
                   </NavLink>
                   {user && (
                     <NavLink

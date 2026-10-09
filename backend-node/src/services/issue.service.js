@@ -78,7 +78,7 @@ async function runIssue(jobId, { user, fields, docType, expiresAt }) {
   jobs.start(jobId, 'render_pdf', 'Calling the document worker');
   const issuedAt = new Date().toISOString();
   const rendered = await worker.renderCertificate({
-    fields: clean, doc_id: docId, verification_url: qrText,
+    fields: clean, doc_id: docId, qr_text: qrText,
     issuer_name: issuer.name, issued_at: issuedAt, doc_type: docType,
   });
   const pdfBytes = Buffer.from(rendered.pdf_base64, 'base64');

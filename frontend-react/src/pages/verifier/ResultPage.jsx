@@ -141,11 +141,22 @@ export default function ResultPage() {
         </section>
       )}
 
+<<<<<<< HEAD
       {/* ---- EVIDENCE CHECKLIST ---- */}
       <section className="space-y-2.5">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Cryptographic & Forensic Evidence Checklist
         </h3>
+=======
+      {/* ---- heatmap ---- */}
+      <section>
+        <HeatmapViewer visual={r.visual} snapshotUrl={r.doc_id ? `/static/snapshots/${r.doc_id}.png` : null} />
+      </section>
+
+      {/* ---- evidence ---- */}
+      <section>
+        <h3 className="section-title mb-3">Evidence checklist — every check that ran</h3>
+>>>>>>> origin/feat/ai-llm-explanation
         <EvidenceList checks={r.checks} />
       </section>
 
@@ -166,6 +177,56 @@ export default function ResultPage() {
       <section>
         <HeatmapViewer visual={r.visual} snapshotUrl={r.doc_id ? `/static/snapshots/${r.doc_id}.png` : null} />
       </section>
+
+      {/* ---- SEMANTIC CONSISTENCY CHECKS ---- */}
+      {r.semantic_findings?.length > 0 && (
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Semantic Consistency Checks
+            </h3>
+            <Badge variant="outline" className="text-[10px]">
+              advisory only
+            </Badge>
+          </div>
+          <ul className="space-y-3">
+            {r.semantic_findings.map((f, i) => (
+              <li
+                key={i}
+                className={`rounded-xl border p-4 ${
+                  f.severity === 'ERROR'
+                    ? 'border-destructive/30 bg-destructive/10'
+                    : f.severity === 'WARNING'
+                    ? 'border-amber-500/30 bg-amber-500/10'
+                    : 'border-emerald-500/30 bg-emerald-500/10'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wider ${
+                      f.severity === 'ERROR'
+                        ? 'text-destructive'
+                        : f.severity === 'WARNING'
+                        ? 'text-amber-700 dark:text-amber-400'
+                        : 'text-emerald-700 dark:text-emerald-400'
+                    }`}
+                  >
+                    {f.status}
+                  </span>
+                  <span className="text-sm font-semibold text-foreground">{f.field.replace(/_/g, ' ')}</span>
+                </div>
+                <p className="mt-1.5 text-xs text-muted-foreground">{f.reason}</p>
+                {f.observed_value && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Observed: <span className="font-medium text-foreground">{f.observed_value}</span>{' '}
+                    {f.expected_rule && `· Expected: ${f.expected_rule}`}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* ---- METADATA SIGNALS ---- */}
       {r.metadata && (
@@ -203,11 +264,11 @@ export default function ResultPage() {
             Rule-Based
           </Badge>
         </div>
-        <p className="text-sm leading-relaxed text-foreground/90">{plainLanguage(r)}</p>
+        <p className="text-sm leading-relaxed text-foreground/90">{r.ai_explanation || plainLanguage(r)}</p>
         <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
           <Sparkles size={13} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
           <span>
-            Verdicts are calculated strictly from cryptographic proofs and deterministic verification rules.
+            Verdicts are calculated strictly from cryptographic proofs and deterministic verification rules. AI explanation is advisory.
           </span>
         </p>
       </section>
