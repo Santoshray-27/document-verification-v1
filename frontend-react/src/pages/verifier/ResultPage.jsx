@@ -141,22 +141,11 @@ export default function ResultPage() {
         </section>
       )}
 
-<<<<<<< HEAD
       {/* ---- EVIDENCE CHECKLIST ---- */}
       <section className="space-y-2.5">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Cryptographic & Forensic Evidence Checklist
         </h3>
-=======
-      {/* ---- heatmap ---- */}
-      <section>
-        <HeatmapViewer visual={r.visual} snapshotUrl={r.doc_id ? `/static/snapshots/${r.doc_id}.png` : null} />
-      </section>
-
-      {/* ---- evidence ---- */}
-      <section>
-        <h3 className="section-title mb-3">Evidence checklist — every check that ran</h3>
->>>>>>> origin/feat/ai-llm-explanation
         <EvidenceList checks={r.checks} />
       </section>
 

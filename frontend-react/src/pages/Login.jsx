@@ -89,8 +89,6 @@ export default function Login() {
             ))}
           </ul>
         </motion.div>
-
-<<<<<<< HEAD
         {/* Login form card */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
