@@ -21,21 +21,18 @@ const VERDICT_COLOURS = {
 
 function VerdictEngineState() {
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-3 p-6 mt-4">
-      <h3 className="text-foreground font-display font-bold text-2xl mb-4">Verdict Engine</h3>
+    <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
+      <h3 className="text-foreground font-display font-bold text-2xl mb-4 text-center">Verdict Engine</h3>
       <div className="flex flex-wrap gap-2.5 justify-center max-w-sm">
         {FORENSICS_CARDS.left.verdictChips.map((chip, i) => {
           const style = VERDICT_COLOURS[chip] || { text: 'text-foreground', border: 'border-border', bg: 'bg-muted' };
           return (
             <motion.span
               key={chip}
-              initial={{ opacity: 0, scale: 0.85, y: 10 }}
+              initial={{ opacity: 0, scale: 0.9, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ delay: i * 0.08, type: 'spring', stiffness: 300, damping: 20 }}
+              transition={{ delay: i * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
               className={`px-3.5 py-1.5 rounded-full text-xs font-bold border ${style.text} ${style.border} ${style.bg}`}
-              style={{
-                transform: `rotate(${(i % 3 - 1) * 2}deg)`,
-              }}
             >
               {chip}
             </motion.span>
@@ -205,31 +202,14 @@ function StatsCard() {
 
 /* ── Section ─────────────────────────────────────────────────── */
 export default function ForensicsSection() {
-  const containerRef = useRef(null);
   const [activeTab, setActiveTab] = useState(0);
-  const prefersReducedMotion = useReducedMotion();
-
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end end'],
-  });
-
-  useMotionValueEvent(scrollYProgress, "change", (latest) => {
-    let newTab = 0;
-    if (latest >= 0.66) newTab = 2;
-    else if (latest >= 0.33) newTab = 1;
-    
-    if (newTab !== activeTab) {
-      setActiveTab(newTab);
-    }
-  });
 
   const ActiveState = STATES[activeTab];
 
   return (
-    <section id="features" className="py-24 md:py-32 px-4 bg-background">
+    <section id="features" className="py-20 md:py-28 px-4 bg-background scroll-mt-28">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <span className="font-mono text-xs uppercase font-bold tracking-wider text-primary mb-2 block">
             Cryptographic Integrity
           </span>

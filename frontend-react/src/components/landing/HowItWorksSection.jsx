@@ -9,13 +9,12 @@ import { HOW_IT_WORKS } from './content.js';
 import { ShieldIllustration, QRIllustration, ChainIllustration } from './Illustrations.jsx';
 
 const STEP_ICONS = [ShieldIllustration, QRIllustration, ChainIllustration];
-const STEP_OFFSETS = [30, 0, 45];
 
 export default function HowItWorksSection() {
   return (
     <section
       id="how-it-works"
-      className="relative py-24 md:py-32 px-4 bg-background border-t border-border/50"
+      className="relative py-20 md:py-28 px-4 bg-background border-t border-border/50 scroll-mt-28"
       aria-label="How Evidentia works"
     >
       <div className="max-w-5xl mx-auto">
@@ -42,19 +41,19 @@ export default function HowItWorksSection() {
           </motion.span>
         </div>
 
-        {/* ── Staggered step cards ── */}
-        <div className="grid md:grid-cols-3 gap-6 items-end pb-8">
+        {/* ── Perfectly aligned step cards ── */}
+        <div className="grid md:grid-cols-3 gap-6 items-stretch pb-8">
           {HOW_IT_WORKS.steps.map((step, i) => {
             const Icon = STEP_ICONS[i];
             return (
               <motion.article
                 key={step.n}
-                initial={{ opacity: 0, y: 40 + STEP_OFFSETS[i] }}
-                whileInView={{ opacity: 1, y: STEP_OFFSETS[i] }}
+                initial={{ opacity: 0, y: 25 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.12, type: 'spring', stiffness: 100, damping: 18 }}
-                whileHover={{ y: STEP_OFFSETS[i] - 8, transition: { duration: 0.2 } }}
-                className="rounded-3xl p-7 flex flex-col gap-5 border border-border bg-card shadow-sm hover:shadow-md transition-shadow cursor-default"
+                transition={{ delay: i * 0.1, type: 'spring', stiffness: 120, damping: 20 }}
+                whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                className="rounded-3xl p-7 flex flex-col justify-between gap-5 border border-border bg-card shadow-sm hover:shadow-md transition-shadow cursor-default"
               >
                 <div className="flex items-start justify-between">
                   <span className="text-5xl font-mono font-black tracking-tighter text-foreground/80 leading-none">

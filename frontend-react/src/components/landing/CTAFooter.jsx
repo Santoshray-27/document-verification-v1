@@ -13,7 +13,11 @@ import { Button } from '../ui/button.jsx';
 
 function scrollTo(href) {
   const el = document.querySelector(href);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (el) {
+    const yOffset = -95;
+    const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+  }
 }
 
 export default function CTAFooter() {
@@ -23,7 +27,7 @@ export default function CTAFooter() {
   return (
     <section
       id="contact"
-      className="px-4 pt-8 pb-16 bg-background border-t border-border/50"
+      className="px-4 pt-8 pb-16 bg-background border-t border-border/50 scroll-mt-28"
       aria-label="Call to action and footer"
     >
       <div className="max-w-5xl mx-auto">
