@@ -1,10 +1,15 @@
-const { GoogleGenAI } = require('@google/genai');
+let GoogleGenAI = null;
+try {
+  ({ GoogleGenAI } = require('@google/genai'));
+} catch {
+  // @google/genai is optional; deterministic verification unaffected
+}
 
 const FALLBACK_EXPLANATION = "AI explanation unavailable; deterministic verification is unaffected.";
 
 async function generateExplanation(verificationResult) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (!apiKey || !GoogleGenAI) {
     return FALLBACK_EXPLANATION;
   }
 
