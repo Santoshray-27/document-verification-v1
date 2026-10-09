@@ -17,8 +17,6 @@ import ResultPage from './pages/verifier/ResultPage.jsx';
 import PublicVerify from './pages/public/PublicVerify.jsx';
 import IssuerDirectory from './pages/public/IssuerDirectory.jsx';
 import AuditLog from './pages/admin/AuditLog.jsx';
-import Settings from './pages/issuer/Settings.jsx';
-import BulkIssuance from './pages/issuer/BulkIssuance.jsx';
 import Reports from './pages/issuer/Reports.jsx';
 import FullScreenLoader from './components/FullScreenLoader.jsx';
 import GlobalStates from './components/GlobalStates.jsx';
