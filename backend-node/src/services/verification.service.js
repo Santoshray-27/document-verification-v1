@@ -10,6 +10,7 @@ const jobs = require('../jobs');
 const audit = require('./audit.service');
 const engine = require('./verdict.engine');
 const reportSvc = require('./report.service');
+const llmSvc = require('./llm.service');
 const { sanitizeText } = require('./sanitize');
 
 const STEPS = [
@@ -26,6 +27,7 @@ const STEPS = [
   { id: 'metadata', label: 'Inspecting metadata' },
   { id: 'visual_diff', label: 'Visual difference analysis' },
   { id: 'verdict', label: 'Composing verdict' },
+  { id: 'ai_explanation', label: 'Generating AI explanation' },
   { id: 'report', label: 'Generating report' },
 ];
 
@@ -233,6 +235,16 @@ async function runVerify(jobId, { buffer, originalName, manualDocId, verifier })
     duration_ms: durationMs,
     created_at: saved.created_at,
   };
+  
+  try {
+    jobs.start(jobId, 'ai_explanation', 'Generating AI explanation');
+    result.ai_explanation = await llmSvc.generateExplanation(result);
+    jobs.finish(jobId, 'ai_explanation', 'passed', 'AI explanation generated');
+  } catch (err) {
+    result.ai_explanation = "AI explanation unavailable; deterministic verification is unaffected.";
+    jobs.finish(jobId, 'ai_explanation', 'warning', 'AI explanation unavailable');
+  }
+
   jobs.done(jobId, result);
   return result;
 }

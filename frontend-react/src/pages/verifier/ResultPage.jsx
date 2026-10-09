@@ -158,7 +158,7 @@ export default function ResultPage() {
           <h3 className="text-sm font-semibold text-gold-200">AI-assisted explanation</h3>
           <span className="chip border border-gold-400/25 bg-gold-500/10 text-[9px] text-gold-300">does not decide the verdict</span>
         </div>
-        <p className="mt-3 text-sm leading-relaxed text-slate-300">{plainLanguage(r)}</p>
+        <p className="mt-3 text-sm leading-relaxed text-slate-300">{r.ai_explanation || plainLanguage(r)}</p>
         <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-500">
           <Sparkles size={12} className="mt-0.5 shrink-0" />
           Generated from the deterministic result above by rule-based templates. The verdict, the confidence and every check come from
