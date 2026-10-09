@@ -77,7 +77,7 @@ export const HOW_IT_WORKS = {
     },
     {
       n:     '03',
-      color: '#4B0FC4',
+      color: '#F59E0B',
       title: 'Audit',
       body:  'Every action is logged in a hash-chained, tamper-evident trail — verifiable by an admin at any time.',
     },
