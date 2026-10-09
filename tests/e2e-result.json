@@ -1,0 +1,215 @@
+{
+  "results": [
+    {
+      "name": "A9  original file",
+      "got": "GENUINE",
+      "want": "GENUINE",
+      "ok": true
+    },
+    {
+      "name": "A11a re-saved PDF (print-to-PDF)",
+      "got": "GENUINE COPY",
+      "want": "GENUINE COPY",
+      "ok": true
+    },
+    {
+      "name": "A11b screenshot PNG",
+      "got": "GENUINE COPY",
+      "want": "GENUINE COPY",
+      "ok": true
+    },
+    {
+      "name": "A11c scanned JPEG",
+      "got": "GENUINE COPY",
+      "want": "GENUINE COPY",
+      "ok": true
+    },
+    {
+      "name": "A10a name edited in PDF",
+      "got": "ALTERED",
+      "want": "ALTERED",
+      "ok": true
+    },
+    {
+      "name": "A10b grade edited in PDF",
+      "got": "ALTERED",
+      "want": "ALTERED",
+      "ok": true
+    },
+    {
+      "name": "A10c name edited in image space",
+      "got": "ALTERED",
+      "want": "ALTERED",
+      "ok": true
+    },
+    {
+      "name": "A12  fake content + copied genuine QR",
+      "got": "FORGED",
+      "want": "FORGED",
+      "ok": true
+    },
+    {
+      "name": "A13a unregistered issuer document",
+      "got": "NOT ISSUED",
+      "want": "NOT ISSUED",
+      "ok": true
+    },
+    {
+      "name": "A13b suspended issuer",
+      "got": "UNVERIFIABLE",
+      "want": "UNVERIFIABLE",
+      "ok": true
+    },
+    {
+      "name": "A13c issuer reactivated",
+      "got": "GENUINE",
+      "want": "GENUINE",
+      "ok": true
+    },
+    {
+      "name": "A14a QR outranks a wrong typed ID",
+      "got": "GENUINE",
+      "want": "GENUINE",
+      "ok": true
+    },
+    {
+      "name": "A14b unknown doc_id, no QR in file",
+      "got": "NOT ISSUED",
+      "want": "NOT ISSUED",
+      "ok": true
+    },
+    {
+      "name": "A19  no QR and no doc_id",
+      "got": "UNABLE TO ASSESS",
+      "want": "UNABLE TO ASSESS",
+      "ok": true
+    },
+    {
+      "name": "A20  registry manifest tampered",
+      "got": "FORGED",
+      "want": "FORGED",
+      "ok": true
+    },
+    {
+      "name": "A20b after restore",
+      "got": "GENUINE",
+      "want": "GENUINE",
+      "ok": true
+    },
+    {
+      "name": "A15  revoked (original bytes)",
+      "got": "REVOKED",
+      "want": "REVOKED",
+      "ok": true
+    },
+    {
+      "name": "A22  public returns the record",
+      "got": "FOUND",
+      "want": "FOUND",
+      "ok": true
+    },
+    {
+      "name": "A24  verifier on issuer route",
+      "got": "403",
+      "want": "403",
+      "ok": true
+    },
+    {
+      "name": "A26  issuer on admin route",
+      "got": "403",
+      "want": "403",
+      "ok": true
+    },
+    {
+      "name": "A4   /auth/me without token",
+      "got": "401",
+      "want": "401",
+      "ok": true
+    },
+    {
+      "name": "A5   /auth/me garbage token",
+      "got": "401",
+      "want": "401",
+      "ok": true
+    },
+    {
+      "name": "A27  audit chain integrity",
+      "got": "VALID",
+      "want": "VALID",
+      "ok": true
+    },
+    {
+      "name": "A28  chain tamper detected",
+      "got": "BROKEN",
+      "want": "BROKEN",
+      "ok": true
+    },
+    {
+      "name": "A28b chain restored",
+      "got": "VALID",
+      "want": "VALID",
+      "ok": true
+    },
+    {
+      "name": "A17  6 MB upload rejected",
+      "got": "413",
+      "want": "413",
+      "ok": true
+    },
+    {
+      "name": "A18  non-PDF magic bytes rejected",
+      "got": "UNABLE TO ASSESS",
+      "want": "UNABLE TO ASSESS",
+      "ok": true
+    },
+    {
+      "name": "A29  report PDF downloads",
+      "got": "PDF",
+      "want": "PDF",
+      "ok": true
+    },
+    {
+      "name": "A29b raw ../ traversal rejected",
+      "got": "400",
+      "want": "400",
+      "ok": true
+    },
+    {
+      "name": "A29c encoded traversal rejected",
+      "got": "400",
+      "want": "400",
+      "ok": true
+    },
+    {
+      "name": "A29d cannot escape /static to keys/",
+      "got": "400",
+      "want": "400",
+      "ok": true
+    },
+    {
+      "name": "A29e /keys is never served",
+      "got": "404",
+      "want": "404",
+      "ok": true
+    },
+    {
+      "name": "A30  XSS payload sanitized",
+      "got": "SANITIZED",
+      "want": "SANITIZED",
+      "ok": true
+    },
+    {
+      "name": "A31  SQLi in doc_id is inert",
+      "got": "NOT ISSUED",
+      "want": "NOT ISSUED",
+      "ok": true
+    },
+    {
+      "name": "A32  no private key in responses",
+      "got": "CLEAN",
+      "want": "CLEAN",
+      "ok": true
+    }
+  ],
+  "doc_id": "07b8f5db-996d-4fc3-b522-b30bfc862bc0"
+}
