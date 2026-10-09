@@ -25,6 +25,7 @@ import routers_public
 import routers_verify
 import routers_reports
 import routers_branding
+import routers_bulk
 
 try:
     import pytesseract
@@ -108,6 +109,7 @@ app.include_router(routers_public.router, prefix="/api")
 app.include_router(routers_verify.router, prefix="/api")
 app.include_router(routers_reports.router, prefix="/api")
 app.include_router(routers_branding.router, prefix="/api")
+app.include_router(routers_bulk.router, prefix="/api")
 
 # Also mount under root for dual compatibility
 app.include_router(routers_auth.router)
@@ -117,6 +119,7 @@ app.include_router(routers_public.router)
 app.include_router(routers_verify.router)
 app.include_router(routers_reports.router)
 app.include_router(routers_branding.router)
+app.include_router(routers_bulk.router)
 
 # Forensic Worker direct endpoints (backwards-compatibility for internal scripts)
 @app.post("/render-certificate")
