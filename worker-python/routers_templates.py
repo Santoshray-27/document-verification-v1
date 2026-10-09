@@ -87,22 +87,27 @@ def get_template_by_id(template_id: str, user: dict = Depends(require_role("issu
 
 @router.post("/preview")
 def preview_template(payload: dict, user: dict = Depends(require_role("issuer"))):
-    tpl_id = payload.get("template_id")
-    fields = payload.get("fields") or {
-        "name": "Alex Mercer",
+    tpl_id = payload.get("templateId") or payload.get("template_id") or payload.get("doc_type") or "tpl_academic"
+    doc_type = payload.get("doc_type") or tpl_id or "academic_certificate"
+    fields = payload.get("sample_fields") or payload.get("fields") or {
+        "recipient_name": "Aarav Sharma",
+        "name": "Aarav Sharma",
         "certificate_number": "PREVIEW-2026-001",
-        "course": "Bachelor of Computer Science",
-        "grade": "First Class Honours",
-        "issue_date": "2026-05-15",
+        "course": "Bachelor of Technology in Computer Science & AI",
+        "grade": "First Class with Distinction (9.4 CGPA)",
+        "issue_date": "2026-10-10",
     }
     
+    issuer = query_one("SELECT name FROM issuers WHERE issuer_id = %s", (user["issuer_id"],))
+    issuer_name = issuer["name"] if issuer and issuer.get("name") else "PIEMR"
+
     pdf_bytes = render_certificate_pdf(
         fields=fields,
         doc_id="preview-demo-id",
         qr_text="https://evidentia.network/preview",
-        issuer_name="Prestige University",
-        issued_at="2026-05-15T00:00:00Z",
-        doc_type="academic_certificate"
+        issuer_name=issuer_name,
+        issued_at="2026-10-10T00:00:00Z",
+        doc_type=doc_type
     )
     from services.pdf_service import first_page_png
     snapshot_bytes = first_page_png(pdf_bytes)
@@ -110,6 +115,7 @@ def preview_template(payload: dict, user: dict = Depends(require_role("issuer"))
     
     return {
         "ok": True,
+        "preview_png_base64": snapshot_b64,
         "preview_base64": f"data:image/png;base64,{snapshot_b64}",
         "snapshot_base64": snapshot_b64
     }

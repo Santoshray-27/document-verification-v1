@@ -14,7 +14,6 @@ import re
 
 import qrcode
 from reportlab.lib.colors import HexColor, white
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
@@ -24,31 +23,43 @@ GOLD = HexColor("#C9A227")
 GOLD_LIGHT = HexColor("#E3C463")
 INK = HexColor("#1B2437")
 MUTED = HexColor("#5A6478")
+PARCHMENT = HexColor("#FDFBF7")
 
-PAGE_W, PAGE_H = A4  # 595.27 x 841.89 pt
-MARGIN = 40
+# Page Dimensions (pt)
+LANDSCAPE_A4 = (841.89, 595.27)
+PORTRAIT_A4 = (595.27, 841.89)
 
 DOC_TYPE_TITLES = {
-    "academic_certificate": "CERTIFICATE OF COMPLETION",
-    "tpl_academic": "CERTIFICATE OF COMPLETION",
-    "marksheet": "MARKSHEET & OFFICIAL TRANSCRIPT",
-    "tpl_marksheet": "MARKSHEET & OFFICIAL TRANSCRIPT",
+    "academic_certificate": "CERTIFICATE OF DEGREE CONFERRAL",
+    "tpl_academic": "CERTIFICATE OF DEGREE CONFERRAL",
+    "tpl_acad_01": "CERTIFICATE OF DEGREE CONFERRAL",
+    "marksheet": "OFFICIAL STATEMENT OF GRADES & CUMULATIVE TRANSCRIPT",
+    "tpl_marksheet": "OFFICIAL STATEMENT OF GRADES & CUMULATIVE TRANSCRIPT",
+    "tpl_mark_01": "OFFICIAL STATEMENT OF GRADES & CUMULATIVE TRANSCRIPT",
     "bonafide": "BONAFIDE CERTIFICATE",
     "tpl_bonafide": "BONAFIDE CERTIFICATE",
-    "hackathon_participation": "HACKATHON PARTICIPATION",
-    "tpl_hack_part": "HACKATHON PARTICIPATION",
-    "hackathon_winner": "HACKATHON WINNER & EXCELLENCE AWARD",
-    "tpl_hack_win": "HACKATHON WINNER & EXCELLENCE AWARD",
-    "workshop_completion": "WORKSHOP & BOOTCAMP COMPLETION",
-    "tpl_workshop": "WORKSHOP & BOOTCAMP COMPLETION",
-    "internship_certificate": "INTERNSHIP COMPLETION CERTIFICATE",
-    "tpl_internship": "INTERNSHIP COMPLETION CERTIFICATE",
+    "tpl_bona_01": "BONAFIDE CERTIFICATE",
+    "hackathon_participation": "CERTIFICATE OF CONTENDER PARTICIPATION",
+    "tpl_hack_part": "CERTIFICATE OF CONTENDER PARTICIPATION",
+    "tpl_hack_part_01": "CERTIFICATE OF CONTENDER PARTICIPATION",
+    "hackathon_winner": "HACKATHON WINNER & PRESTIGE AWARD",
+    "tpl_hack_win": "HACKATHON WINNER & PRESTIGE AWARD",
+    "tpl_hack_win_01": "HACKATHON WINNER & PRESTIGE AWARD",
+    "workshop_completion": "PROFESSIONAL SKILL CERTIFICATION",
+    "tpl_workshop": "PROFESSIONAL SKILL CERTIFICATION",
+    "tpl_work_01": "PROFESSIONAL SKILL CERTIFICATION",
+    "internship_certificate": "CORPORATE INTERNSHIP EXPERIENCE RECORD",
+    "tpl_internship": "CORPORATE INTERNSHIP EXPERIENCE RECORD",
+    "tpl_intern_01": "CORPORATE INTERNSHIP EXPERIENCE RECORD",
     "employment_offer": "OFFER OF EMPLOYMENT",
+    "tpl_emp_01": "OFFER OF EMPLOYMENT",
     "medical_fitness": "MEDICAL FITNESS CERTIFICATE",
+    "tpl_med_01": "MEDICAL FITNESS CERTIFICATE",
     "commercial_invoice": "COMMERCIAL INVOICE",
+    "tpl_inv_01": "COMMERCIAL INVOICE",
 }
 
-MAX_LEN = {"name": 60, "course": 80, "grade": 30, "certificate_number": 40, "issue_date": 30, "issuer_name": 70}
+MAX_LEN = {"name": 70, "course": 90, "grade": 50, "certificate_number": 40, "issue_date": 30, "issuer_name": 80}
 
 
 def sanitize(value: str, key: str = "") -> str:
@@ -64,38 +75,14 @@ def sanitize(value: str, key: str = "") -> str:
 
 
 def _qr_image(text: str) -> ImageReader:
-    qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=2)
+    qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=4, border=1)
     qr.add_data(text)
     qr.make(fit=True)
-    img = qr.make_image(fill_color="#0A1F44", back_color="white").convert("RGB")
+    img = qr.make_image(fill_color="#0F172A", back_color="white").convert("RGB")
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
     return ImageReader(buf)
-
-
-def _corner_ornaments(c: canvas.Canvas, x0: float, y0: float, x1: float, y1: float, size: float = 16) -> None:
-    c.setStrokeColor(GOLD)
-    c.setLineWidth(1.4)
-    for cx, cy, dx, dy in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x0, y1, 1, -1), (x1, y1, -1, -1)):
-        c.line(cx, cy + dy * size, cx + dx * size, cy)
-        c.line(cx + dx * size * 0.35, cy + dy * size, cx + dx * size, cy + dy * size * 0.65)
-
-
-def _seal(c: canvas.Canvas, cx: float, cy: float, r: float, short_id: str) -> None:
-    c.setStrokeColor(GOLD)
-    c.setLineWidth(1.6)
-    c.circle(cx, cy, r, stroke=1, fill=0)
-    c.setLineWidth(0.6)
-    c.circle(cx, cy, r - 5, stroke=1, fill=0)
-    c.setFillColor(NAVY)
-    c.setFont("Helvetica-Bold", 11)
-    c.drawCentredString(cx, cy + 6, "EVIDENTIA")
-    c.setFont("Helvetica", 5.6)
-    c.setFillColor(MUTED)
-    c.drawCentredString(cx, cy - 4, "PROOF IN EVERY PIXEL")
-    c.setFont("Courier", 5.2)
-    c.drawCentredString(cx, cy - 13, short_id[:16])
 
 
 def _safe_image_reader(b64_str: str) -> ImageReader | None:
@@ -111,6 +98,44 @@ def _safe_image_reader(b64_str: str) -> ImageReader | None:
         return None
 
 
+def _draw_security_footer(c: canvas.Canvas, W: float, H: float, doc_id: str, issue_date: str, qr_text: str, dark: bool = False) -> None:
+    foot_y = 48
+    line_col = HexColor("#334155") if dark else HexColor("#E2E8F0")
+    text_col = HexColor("#CBD5E1") if dark else HexColor("#475569")
+    sub_col = HexColor("#94A3B8") if dark else HexColor("#64748B")
+
+    c.setStrokeColor(line_col)
+    c.setLineWidth(0.8)
+    c.line(36, foot_y + 14, W - 36, foot_y + 14)
+
+    c.setFillColor(text_col)
+    c.setFont("Helvetica-Bold", 7.5)
+    c.drawString(36, foot_y, "Secured by Evidentia · ECDSA P-256 + SHA-256")
+
+    c.setFillColor(sub_col)
+    c.setFont("Courier", 7)
+    c.drawString(36, foot_y - 10, f"Doc ID: {doc_id} · Issued: {issue_date}")
+
+    c.setFont("Helvetica", 6.5)
+    c.drawString(36, foot_y - 19, "Cryptographically Signed & Registry-Backed Credential")
+
+    qr_size = 34
+    qr_x = W - 36 - qr_size
+    qr_y = foot_y - 20
+
+    c.setFillColor(white)
+    c.setStrokeColor(line_col)
+    c.rect(qr_x - 2, qr_y - 2, qr_size + 4, qr_size + 4, stroke=1, fill=1)
+    c.drawImage(_qr_image(qr_text), qr_x, qr_y, width=qr_size, height=qr_size, mask=None)
+
+    c.setFillColor(HexColor("#F8FAFC") if dark else HexColor("#0F172A"))
+    c.setFont("Helvetica-Bold", 7)
+    c.drawRightString(qr_x - 8, foot_y - 5, "SCAN TO VERIFY")
+    c.setFillColor(sub_col)
+    c.setFont("Helvetica", 6.5)
+    c.drawRightString(qr_x - 8, foot_y - 15, "tamper-evident proof")
+
+
 def render_certificate_pdf(
     fields: dict,
     doc_id: str,
@@ -121,28 +146,32 @@ def render_certificate_pdf(
     branding: dict | None = None,
     custom_layout: dict | None = None,
 ) -> bytes:
-    """Render the certificate and return the final PDF bytes."""
-    name = sanitize(fields.get("name"), "name") or "Unnamed Recipient"
+    """Render certificate PDF pixel-matched to the corresponding CertificateView component."""
+    # Normalize fields from both forms
+    recipient = sanitize(fields.get("recipient_name") or fields.get("name"), "name") or "Aarav Sharma"
+    cert_no = sanitize(fields.get("certificate_number") or doc_id, "certificate_number") or "MIT-ENG-2026-084"
     course = sanitize(fields.get("course"), "course")
+    department = sanitize(fields.get("department"), "course")
     grade = sanitize(fields.get("grade"), "grade")
-    cert_no = sanitize(fields.get("certificate_number"), "certificate_number")
-    issue_date = sanitize(fields.get("issue_date"), "issue_date")
-    issuer = sanitize(issuer_name, "issuer_name") or "Registered Issuer"
+    issue_date = sanitize(fields.get("issue_date"), "issue_date") or issued_at[:10]
+    issuer = sanitize(issuer_name, "issuer_name") or "PIEMR"
     title = DOC_TYPE_TITLES.get(doc_type, "CERTIFICATE")
 
-    # Custom colors from branding if provided
-    primary_color = NAVY
-    accent_color = GOLD
-    if branding and isinstance(branding, dict):
-        p_hex = branding.get("primary_color")
-        if p_hex and re.match(r"^#[0-9a-fA-F]{3,6}$", str(p_hex)):
-            primary_color = HexColor(str(p_hex))
-        a_hex = branding.get("accent_color")
-        if a_hex and re.match(r"^#[0-9a-fA-F]{3,6}$", str(a_hex)):
-            accent_color = HexColor(str(a_hex))
+    # Determine orientation matching frontend TEMPLATE_REGISTRY
+    is_landscape = doc_type in (
+        "academic_certificate", "tpl_academic", "tpl_acad_01",
+        "hackathon_participation", "tpl_hack_part", "tpl_hack_part_01",
+        "hackathon_winner", "tpl_hack_win", "tpl_hack_win_01",
+        "workshop_completion", "tpl_workshop", "tpl_work_01"
+    )
+    PAGE_W, PAGE_H = LANDSCAPE_A4 if is_landscape else PORTRAIT_A4
+
+    # Extract monogram
+    words = [w for w in re.split(r"\s+", issuer) if w]
+    monogram = "".join(w[0] for w in words[:2]).upper() if words else "PI"
 
     buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4, invariant=1)
+    c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H), invariant=1)
     c.setProducer("Evidentia Verifier 1.0")
     c.setCreator("Evidentia")
     c.setTitle(f"Evidentia {title} {cert_no or doc_id}")
@@ -156,643 +185,746 @@ def render_certificate_pdf(
         if bg_b64:
             bg_reader = _safe_image_reader(bg_b64)
 
-    # ---- background ----
     if bg_reader:
         try:
             c.drawImage(bg_reader, 0, 0, width=PAGE_W, height=PAGE_H, mask=None)
         except Exception:
-            c.setFillColor(white)
+            c.setFillColor(PARCHMENT if is_landscape else white)
             c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
-    else:
-        c.setFillColor(white)
+
+    # =========================================================================
+    # 1. ACADEMIC CERTIFICATE (Landscape Parchment - exact AcademicCertificateView)
+    # =========================================================================
+    if doc_type in ("academic_certificate", "tpl_academic", "tpl_acad_01") and not bg_reader:
+        # Background
+        c.setFillColor(PARCHMENT)
         c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
-        c.setFillColor(HexColor("#F7F8FC"))
-        c.rect(0, PAGE_H - 150, PAGE_W, 150, stroke=0, fill=1)
 
-        # ---- double border + ornaments only when standard template background ----
-        c.setStrokeColor(primary_color)
-        c.setLineWidth(2.2)
-        c.rect(MARGIN - 14, MARGIN - 14, PAGE_W - 2 * (MARGIN - 14), PAGE_H - 2 * (MARGIN - 14), stroke=1, fill=0)
-        c.setStrokeColor(accent_color)
-        c.setLineWidth(0.7)
-        c.rect(MARGIN - 6, MARGIN - 6, PAGE_W - 2 * (MARGIN - 6), PAGE_H - 2 * (MARGIN - 6), stroke=1, fill=0)
-        _corner_ornaments(c, MARGIN - 6, MARGIN - 6, PAGE_W - MARGIN + 6, PAGE_H - MARGIN + 6)
-
-    # ---- header logos if present ----
-    if branding and isinstance(branding, dict):
-        primary_logo = _safe_image_reader(branding.get("primary_logo_base64"))
-        if primary_logo:
-            try:
-                # Top left header logo (max 52x52)
-                c.drawImage(primary_logo, MARGIN + 12, PAGE_H - 105, width=52, height=52, mask="auto", preserveAspectRatio=True)
-            except Exception:
-                pass
-
-        event_logo = _safe_image_reader(branding.get("event_logo_base64"))
-        if event_logo:
-            try:
-                # Top right header logo (max 52x52)
-                c.drawImage(event_logo, PAGE_W - MARGIN - 64, PAGE_H - 105, width=52, height=52, mask="auto", preserveAspectRatio=True)
-            except Exception:
-                pass
-
-    # ---- header (Primary brand is Issuer Organization Name) ----
-    y = PAGE_H - 88
-    c.setFillColor(NAVY)
-    # Dynamically scale font size for long org names (max 2 lines if very long)
-    org_len = len(issuer)
-    org_font_size = 19 if org_len < 32 else (16 if org_len < 46 else 13)
-    c.setFont("Helvetica-Bold", org_font_size)
-    c.drawCentredString(PAGE_W / 2, y, issuer[:68])
-
-    c.setFillColor(GOLD)
-    c.setFont("Helvetica-Bold", 8)
-    c.drawCentredString(PAGE_W / 2, y - 14, "OFFICIAL VERIFIABLE CREDENTIAL")
-
-    c.setStrokeColor(GOLD)
-    c.setLineWidth(0.8)
-    c.line(PAGE_W / 2 - 110, y - 22, PAGE_W / 2 + 110, y - 22)
-
-    c.setFillColor(MUTED)
-    c.setFont("Helvetica-Oblique", 8.5)
-    c.drawCentredString(PAGE_W / 2, y - 36, "Digitally signed and cryptographically registered credential")
-
-    # ---- title ----
-    y = PAGE_H - 240
-    c.setFillColor(NAVY)
-    c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(PAGE_W / 2, y, title)
-
-    # ---- body layouts for each template type ----
-    if doc_type in ("marksheet", "tpl_marksheet"):
-        c.setFillColor(INK)
-        c.setFont("Times-Bold", 24)
-        c.drawCentredString(PAGE_W / 2, y - 45, name[:44])
-        c.setStrokeColor(GOLD)
-        c.setLineWidth(0.9)
-        name_w = min(c.stringWidth(name[:44], "Times-Bold", 24) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 53, PAGE_W / 2 + name_w / 2, y - 53)
-
-        # Transcript Data Table Box
-        ty = y - 75
-        c.setFillColor(HexColor("#FAFAFC"))
-        c.setStrokeColor(HexColor("#D1D5DB"))
-        c.roundRect(MARGIN + 20, ty - 85, PAGE_W - 2 * (MARGIN + 20), 80, 4, stroke=1, fill=1)
-        
-        c.setFillColor(NAVY)
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(MARGIN + 35, ty - 20, "PROGRAM / BRANCH:")
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 9)
-        c.drawString(MARGIN + 160, ty - 20, course or "Academic Program")
-
-        c.setFillColor(NAVY)
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(MARGIN + 35, ty - 42, "CANDIDATE ID / ROLL:")
-        c.setFillColor(INK)
-        c.setFont("Courier-Bold", 9)
-        c.drawString(MARGIN + 160, ty - 42, cert_no or "—")
-
-        c.setFillColor(NAVY)
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(MARGIN + 35, ty - 64, "OVERALL GRADE / CGPA:")
-        c.setFillColor(HexColor("#10B981"))
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(MARGIN + 160, ty - 64, grade or "—")
-
-    elif doc_type in ("bonafide", "tpl_bonafide"):
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica-Oblique", 10)
-        c.drawCentredString(PAGE_W / 2, y - 24, "TO WHOMSOEVER IT MAY CONCERN")
-        
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica", 10)
-        c.drawCentredString(PAGE_W / 2, y - 44, "This is to certify that")
-
-        c.setFillColor(INK)
-        c.setFont("Times-Bold", 24)
-        c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-        c.setStrokeColor(GOLD)
-        c.setLineWidth(0.9)
-        name_w = min(c.stringWidth(name[:44], "Times-Bold", 24) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 82, PAGE_W / 2 + name_w / 2, y - 82)
-
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 10.5)
-        c.drawCentredString(PAGE_W / 2, y - 105, "is a bonafide student / member of this institution.")
-        if course:
-            c.setFont("Helvetica-Bold", 10.5)
-            c.setFillColor(NAVY)
-            c.drawCentredString(PAGE_W / 2, y - 124, f"Department / Purpose: {course}")
-        if grade:
-            c.setFont("Helvetica", 9.5)
-            c.setFillColor(MUTED)
-            c.drawCentredString(PAGE_W / 2, y - 142, f"Session / Status: {grade}")
-
-    elif doc_type == "employment_offer":
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica", 10)
-        c.drawCentredString(PAGE_W / 2, y - 25, "We are pleased to issue this offer of employment to")
-
-        c.setFillColor(INK)
-        c.setFont("Times-Bold", 24)
-        c.drawCentredString(PAGE_W / 2, y - 55, name[:44])
-        c.setStrokeColor(GOLD)
-        c.setLineWidth(0.9)
-        name_w = min(c.stringWidth(name[:44], "Times-Bold", 24) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 63, PAGE_W / 2 + name_w / 2, y - 63)
-
-        ty = y - 85
-        c.setFillColor(HexColor("#F8FAFC"))
-        c.setStrokeColor(HexColor("#CBD5E1"))
-        c.roundRect(MARGIN + 30, ty - 65, PAGE_W - 2 * (MARGIN + 30), 60, 4, stroke=1, fill=1)
-
-        c.setFillColor(NAVY)
-        c.setFont("Helvetica-Bold", 9.5)
-        c.drawString(MARGIN + 45, ty - 22, "DESIGNATION / POSITION:")
-        c.setFillColor(INK)
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(MARGIN + 200, ty - 22, course or "Assigned Role")
-
-        c.setFillColor(NAVY)
-        c.setFont("Helvetica-Bold", 9.5)
-        c.drawString(MARGIN + 45, ty - 45, "REMUNERATION / DEPT:")
-        c.setFillColor(HexColor("#D97706"))
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(MARGIN + 200, ty - 45, grade or "Standard Grade")
-
-    elif doc_type == "medical_fitness":
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica", 10)
-        c.drawCentredString(PAGE_W / 2, y - 25, "This is to certify that candidate")
-
-        c.setFillColor(INK)
-        c.setFont("Times-Bold", 24)
-        c.drawCentredString(PAGE_W / 2, y - 55, name[:44])
-        c.setStrokeColor(HexColor("#EF4444"))
-        c.setLineWidth(0.9)
-        name_w = min(c.stringWidth(name[:44], "Times-Bold", 24) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 63, PAGE_W / 2 + name_w / 2, y - 63)
-
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 10)
-        c.drawCentredString(PAGE_W / 2, y - 88, "has undergone medical examination and is declared:")
-
-        c.setFillColor(HexColor("#059669"))
-        c.setFont("Helvetica-Bold", 12.5)
-        c.drawCentredString(PAGE_W / 2, y - 110, grade or "FIT FOR DUTY / ADMISSION")
-
-        if course:
-            c.setFillColor(MUTED)
-            c.setFont("Helvetica", 9.5)
-            c.drawCentredString(PAGE_W / 2, y - 128, f"Examining Officer / Purpose: {course}")
-
-    elif doc_type == "commercial_invoice":
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica-Bold", 9.5)
-        c.drawCentredString(PAGE_W / 2, y - 24, f"BILL TO: {name[:44]}")
-
-        ty = y - 45
-        c.setFillColor(HexColor("#F8FAFC"))
+        # Outer navy border (border-[6px] border-[#0A1F44])
         c.setStrokeColor(NAVY)
-        c.setLineWidth(1)
-        c.roundRect(MARGIN + 20, ty - 90, PAGE_W - 2 * (MARGIN + 20), 85, 4, stroke=1, fill=1)
+        c.setLineWidth(5)
+        c.rect(14, 14, PAGE_W - 28, PAGE_H - 28, stroke=1, fill=0)
 
-        c.setFillColor(NAVY)
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(MARGIN + 35, ty - 20, "DESCRIPTION OF SERVICES / ITEMS:")
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 9.5)
-        c.drawString(MARGIN + 35, ty - 38, course or "Professional Verification Services")
-
-        c.setStrokeColor(HexColor("#E2E8F0"))
-        c.line(MARGIN + 35, ty - 50, PAGE_W - MARGIN - 35, ty - 50)
-
-        c.setFillColor(NAVY)
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(MARGIN + 35, ty - 70, "TOTAL PAYABLE AMOUNT:")
-        c.setFillColor(HexColor("#2563EB"))
-        c.setFont("Helvetica-Bold", 12.5)
-        c.drawString(MARGIN + 220, ty - 70, grade or "₹ 0.00")
-
-    elif doc_type in ("hackathon_participation", "tpl_hack_part"):
-        c.setFillColor(HexColor("#06B6D4"))
-        c.setFont("Helvetica-Bold", 10)
-        c.drawCentredString(PAGE_W / 2, y - 24, "IN RECOGNITION OF INNOVATION & PARTICIPATION")
-
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica", 10)
-        c.drawCentredString(PAGE_W / 2, y - 44, "This is proudly presented to")
-
-        c.setFillColor(INK)
-        c.setFont("Helvetica-Bold", 26)
-        c.drawCentredString(PAGE_W / 2, y - 76, name[:44])
-        c.setStrokeColor(HexColor("#06B6D4"))
-        c.setLineWidth(1.2)
-        name_w = min(c.stringWidth(name[:44], "Helvetica-Bold", 26) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
-
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 11)
-        hack_name = fields.get("hackathon_name") or course or "National Hackathon"
-        c.drawCentredString(PAGE_W / 2, y - 110, f"for active participation and code contribution in {hack_name}")
-
-        team_name = fields.get("team_name")
-        project_title = fields.get("project_title")
-        if team_name or project_title:
-            c.setFont("Helvetica-Bold", 10)
-            c.setFillColor(NAVY)
-            sub = f"Team: {team_name}" if team_name else ""
-            if project_title:
-                sub += f" · Project: {project_title}" if sub else f"Project: {project_title}"
-            c.drawCentredString(PAGE_W / 2, y - 130, sub[:65])
-
-    elif doc_type in ("hackathon_winner", "tpl_hack_win"):
-        c.setFillColor(HexColor("#D97706"))
-        c.setFont("Helvetica-Bold", 11)
-        rank = fields.get("standing_rank") or "FIRST PLACE CHAMPION"
-        c.drawCentredString(PAGE_W / 2, y - 24, f"★ {rank.upper()} ★")
-
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica", 10)
-        c.drawCentredString(PAGE_W / 2, y - 44, "This excellence award is conferred upon")
-
-        c.setFillColor(INK)
-        c.setFont("Times-Bold", 27)
-        c.drawCentredString(PAGE_W / 2, y - 76, name[:44])
+        # Inner ornate gold double borders (border-[1.5px] and border-[0.5px])
         c.setStrokeColor(GOLD)
-        c.setLineWidth(1.5)
-        name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+        c.setLineWidth(1.4)
+        c.rect(22, 22, PAGE_W - 44, PAGE_H - 44, stroke=1, fill=0)
 
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 11)
-        hack_name = fields.get("hackathon_name") or course or "Global Hackathon"
-        c.drawCentredString(PAGE_W / 2, y - 110, f"for winning and exemplary technical mastery at {hack_name}")
+        c.setStrokeColor(HexColor("#E5D394"))
+        c.setLineWidth(0.6)
+        c.rect(26, 26, PAGE_W - 52, PAGE_H - 52, stroke=1, fill=0)
 
-        prize = fields.get("prize_amount")
-        if prize:
-            c.setFont("Helvetica-Bold", 10.5)
-            c.setFillColor(HexColor("#D97706"))
-            c.drawCentredString(PAGE_W / 2, y - 130, f"Prize Awarded: {prize}")
+        # Corner gold brackets
+        c.setStrokeColor(GOLD)
+        c.setLineWidth(2)
+        bracket_len = 28
+        for cx, cy, dx, dy in (
+            (30, PAGE_H - 30, 1, -1),
+            (PAGE_W - 30, PAGE_H - 30, -1, -1),
+            (30, 30, 1, 1),
+            (PAGE_W - 30, 30, -1, 1)
+        ):
+            c.line(cx, cy, cx + dx * bracket_len, cy)
+            c.line(cx, cy, cx, cy + dy * bracket_len)
 
-    elif doc_type in ("workshop_completion", "tpl_workshop"):
-        c.setFillColor(HexColor("#0D9488"))
-        c.setFont("Helvetica-Bold", 10)
-        c.drawCentredString(PAGE_W / 2, y - 24, "CERTIFICATE OF TECHNICAL MASTERY")
-
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica", 10)
-        c.drawCentredString(PAGE_W / 2, y - 44, "This certifies that")
-
-        c.setFillColor(INK)
-        c.setFont("Times-Bold", 26)
-        c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-        c.setStrokeColor(HexColor("#0D9488"))
-        c.setLineWidth(1)
-        name_w = min(c.stringWidth(name[:44], "Times-Bold", 26) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 82, PAGE_W / 2 + name_w / 2, y - 82)
-
-        workshop_title = fields.get("workshop_title") or course or "Hands-on Technical Bootcamp"
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 11)
-        c.drawCentredString(PAGE_W / 2, y - 108, f"has successfully completed the intensive bootcamp on {workshop_title}")
-
-        hours = fields.get("duration_hours")
-        if hours:
-            c.setFont("Helvetica-Bold", 10)
-            c.setFillColor(HexColor("#0D9488"))
-            c.drawCentredString(PAGE_W / 2, y - 128, f"Total Immersion: {hours} Hours of Practical Training")
-
-    elif doc_type in ("internship_certificate", "tpl_internship"):
-        c.setFillColor(HexColor("#1E40AF"))
-        c.setFont("Helvetica-Bold", 10)
-        c.drawCentredString(PAGE_W / 2, y - 24, "CERTIFICATE OF INTERNSHIP COMPLETION")
-
-        c.setFillColor(MUTED)
-        c.setFont("Helvetica", 10)
-        c.drawCentredString(PAGE_W / 2, y - 44, "This is to certify that")
-
-        c.setFillColor(INK)
-        c.setFont("Times-Bold", 26)
-        c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-        c.setStrokeColor(HexColor("#1E40AF"))
-        c.setLineWidth(1.2)
-        name_w = min(c.stringWidth(name[:44], "Times-Bold", 26) + 30, PAGE_W - 160)
-        c.line(PAGE_W / 2 - name_w / 2, y - 82, PAGE_W / 2 + name_w / 2, y - 82)
-
-        role = fields.get("role_title") or course or "Software Engineering Intern"
-        dept = fields.get("department") or "Engineering Team"
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 11)
-        c.drawCentredString(PAGE_W / 2, y - 108, f"has served with distinction as {role} in the {dept}")
-
-        perf = fields.get("performance_rating") or grade
-        if perf:
-            c.setFont("Helvetica-Bold", 10)
-            c.setFillColor(HexColor("#1E40AF"))
-            c.drawCentredString(PAGE_W / 2, y - 128, f"Performance Evaluation: {perf}")
-
-    else:
-        # Standard built-in body rendering
-        # ---- title ----
-        y = PAGE_H - 250
-        c.setFillColor(NAVY)
-        c.setFont("Helvetica-Bold", 17)
-        c.drawCentredString(PAGE_W / 2, y, title)
-
-        # ---- body ----
-        if doc_type == "marksheet":
-            c.setFillColor(MUTED)
-            c.setFont("Helvetica", 11.5)
-            c.drawCentredString(PAGE_W / 2, y - 34, "Official Transcript of Records")
-
-            c.setFillColor(INK)
-            c.setFont("Times-Bold", 27)
-            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-            c.setStrokeColor(GOLD)
-            c.setLineWidth(0.9)
-            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
-            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
-
-        c.setFillColor(INK)
-        c.setFont("Helvetica", 11.5)
-        line_y = y - 112
-        if course:
-            c.drawCentredString(PAGE_W / 2, line_y, f"has successfully completed {course}")
-            line_y -= 20
-        if grade:
-            c.setFont("Helvetica-Bold", 11.5)
+        # Subtle watermark initial
+        c.saveState()
+        try:
             c.setFillColor(NAVY)
-            c.drawCentredString(PAGE_W / 2, line_y, f"Grade: {grade}")
-            c.setFillColor(INK)
-            c.setFont("Helvetica", 11.5)
-            line_y = y - 112
-            if course:
-                c.drawCentredString(PAGE_W / 2, line_y, f"Program: {course}")
-                line_y -= 20
-            if grade:
-                c.setFont("Helvetica-Bold", 14)
-                c.setFillColor(NAVY)
-                c.drawCentredString(PAGE_W / 2, line_y, f"Overall Grade/Marks: {grade}")
-                c.setFillColor(INK)
-                c.setFont("Helvetica", 11.5)
-                line_y -= 20
-            if issue_date:
-                c.drawCentredString(PAGE_W / 2, line_y, f"Date of Issue: {issue_date}")
-
-        elif doc_type == "bonafide":
-            c.setFillColor(MUTED)
-            c.setFont("Helvetica", 11.5)
-            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
-            
-            c.setFillColor(INK)
-            c.setFont("Times-Bold", 27)
-            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-            c.setStrokeColor(GOLD)
-            c.setLineWidth(0.9)
-            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
-            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
-
-            c.setFillColor(INK)
-            c.setFont("Helvetica", 11.5)
-            line_y = y - 112
-            c.drawCentredString(PAGE_W / 2, line_y, "is/was a bonafide student of this institution")
-            line_y -= 20
-            if course:
-                c.drawCentredString(PAGE_W / 2, line_y, f"enrolled in the {course} program.")
-                line_y -= 20
-            if issue_date:
-                c.drawCentredString(PAGE_W / 2, line_y, f"Issued on {issue_date}")
-
-        elif doc_type in ("hackathon_participation", "hackathon_winner"):
-            c.setFillColor(MUTED)
-            c.setFont("Helvetica", 11.5)
-            action_text = "This certificate is proudly awarded to"
-            c.drawCentredString(PAGE_W / 2, y - 34, action_text)
-
-            c.setFillColor(INK)
-            c.setFont("Times-Bold", 27)
-            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-            c.setStrokeColor(accent_color or GOLD)
-            c.setLineWidth(1.2)
-            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
-            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
-
-            c.setFillColor(INK)
-            c.setFont("Helvetica", 11.5)
-            line_y = y - 112
-            if doc_type == "hackathon_winner":
-                c.drawCentredString(PAGE_W / 2, line_y, f"for demonstrating exceptional engineering excellence in")
-                line_y -= 20
-                event_name = course or "EVIDENTIA National Hackathon"
-                c.setFont("Helvetica-Bold", 13.5)
-                c.setFillColor(primary_color or NAVY)
-                c.drawCentredString(PAGE_W / 2, line_y, event_name)
-                c.setFillColor(INK)
-                c.setFont("Helvetica", 11.5)
-                line_y -= 20
-                if grade:
-                    c.setFont("Helvetica-Bold", 13.0)
-                    c.setFillColor(GOLD)
-                    c.drawCentredString(PAGE_W / 2, line_y, f"Standing / Award: {grade}")
-                    c.setFillColor(INK)
-                    c.setFont("Helvetica", 11.5)
-                    line_y -= 20
-            else:
-                c.drawCentredString(PAGE_W / 2, line_y, f"for active and successful participation in")
-                line_y -= 20
-                event_name = course or "EVIDENTIA Hackathon 2026"
-                c.setFont("Helvetica-Bold", 13.0)
-                c.setFillColor(primary_color or NAVY)
-                c.drawCentredString(PAGE_W / 2, line_y, event_name)
-                c.setFillColor(INK)
-                c.setFont("Helvetica", 11.5)
-                line_y -= 20
-                if grade:
-                    c.drawCentredString(PAGE_W / 2, line_y, f"Track / Team Recognition: {grade}")
-                    line_y -= 20
-
-            if issue_date:
-                c.drawCentredString(PAGE_W / 2, line_y, f"Presented on {issue_date}")
-
-        elif doc_type == "workshop_completion":
-            c.setFillColor(MUTED)
-            c.setFont("Helvetica", 11.5)
-            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
-
-            c.setFillColor(INK)
-            c.setFont("Times-Bold", 27)
-            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-            c.setStrokeColor(GOLD)
-            c.setLineWidth(0.9)
-            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
-            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
-
-            c.setFillColor(INK)
-            c.setFont("Helvetica", 11.5)
-            line_y = y - 112
-            c.drawCentredString(PAGE_W / 2, line_y, "has successfully attended and completed the intensive workshop on")
-            line_y -= 20
-            if course:
-                c.setFont("Helvetica-Bold", 13)
-                c.setFillColor(primary_color or NAVY)
-                c.drawCentredString(PAGE_W / 2, line_y, course)
-                c.setFillColor(INK)
-                c.setFont("Helvetica", 11.5)
-                line_y -= 20
-            if grade:
-                c.drawCentredString(PAGE_W / 2, line_y, f"Proficiency Level: {grade}")
-                line_y -= 20
-            if issue_date:
-                c.drawCentredString(PAGE_W / 2, line_y, f"Awarded on {issue_date}")
-
-        elif doc_type == "internship_certificate":
-            c.setFillColor(MUTED)
-            c.setFont("Helvetica", 11.5)
-            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
-
-            c.setFillColor(INK)
-            c.setFont("Times-Bold", 27)
-            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-            c.setStrokeColor(GOLD)
-            c.setLineWidth(0.9)
-            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
-            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
-
-            c.setFillColor(INK)
-            c.setFont("Helvetica", 11.5)
-            line_y = y - 112
-            c.drawCentredString(PAGE_W / 2, line_y, "has successfully completed a practical internship program as")
-            line_y -= 20
-            if course:
-                c.setFont("Helvetica-Bold", 13)
-                c.setFillColor(primary_color or NAVY)
-                c.drawCentredString(PAGE_W / 2, line_y, course)
-                c.setFillColor(INK)
-                c.setFont("Helvetica", 11.5)
-                line_y -= 20
-            if grade:
-                c.drawCentredString(PAGE_W / 2, line_y, f"Performance Evaluation: {grade}")
-                line_y -= 20
-            if issue_date:
-                c.drawCentredString(PAGE_W / 2, line_y, f"Dated: {issue_date}")
-
-        else:
-            c.setFillColor(MUTED)
-            c.setFont("Helvetica", 10.5)
-            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
-
-            c.setFillColor(INK)
-            c.setFont("Times-Bold", 27)
-            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
-            c.setStrokeColor(GOLD)
-            c.setLineWidth(0.9)
-            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
-            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
-
-            c.setFillColor(INK)
-            c.setFont("Helvetica", 11.5)
-            line_y = y - 112
-            if course:
-                c.drawCentredString(PAGE_W / 2, line_y, f"has successfully completed  {course}")
-                line_y -= 20
-            if grade:
-                c.setFont("Helvetica-Bold", 11.5)
-                c.setFillColor(NAVY)
-                c.drawCentredString(PAGE_W / 2, line_y, f"Grade: {grade}")
-                c.setFillColor(INK)
-                c.setFont("Helvetica", 11.5)
-                line_y -= 20
-            if issue_date:
-                c.drawCentredString(PAGE_W / 2, line_y, f"Issued on {issue_date}")
-
-    # ---- seal / signatory ----
-    custom_seal = None
-    custom_signatory = None
-    if branding and isinstance(branding, dict):
-        custom_seal = _safe_image_reader(branding.get("seal_base64"))
-        custom_signatory = _safe_image_reader(branding.get("signatory_base64"))
-
-    if custom_seal:
-        try:
-            c.drawImage(custom_seal, PAGE_W - 130 - 36, PAGE_H - 470 - 36, width=72, height=72, mask="auto", preserveAspectRatio=True)
-        except Exception:
-            _seal(c, PAGE_W - 130, PAGE_H - 470, 44, doc_id)
-    else:
-        _seal(c, PAGE_W - 130, PAGE_H - 470, 44, doc_id)
-
-    if custom_signatory:
-        try:
-            # Authorized signatory signature image positioned above signatory label
-            c.drawImage(custom_signatory, MARGIN + 40, PAGE_H - 475, width=90, height=36, mask="auto", preserveAspectRatio=True)
-            c.setFillColor(MUTED)
-            c.setFont("Helvetica-Bold", 7.5)
-            c.drawString(MARGIN + 40, PAGE_H - 485, "AUTHORIZED SIGNATORY")
+            c.setFillAlpha(0.035)
+            c.setFont("Helvetica-Bold", 175)
+            c.drawCentredString(PAGE_W / 2, PAGE_H / 2 - 45, monogram)
         except Exception:
             pass
+        c.restoreState()
 
-    # ---- facts block (OCR-friendly, fixed layout) ----
-    fy = PAGE_H - 560
-    c.setFillColor(HexColor("#EEF1F8"))
-    c.roundRect(MARGIN + 10, fy - 78, PAGE_W - 2 * (MARGIN + 10), 92, 6, stroke=0, fill=1)
-    c.setFillColor(MUTED)
-    c.setFont("Helvetica-Bold", 7.5)
-    rows = [
-        ("CERTIFICATE ID", cert_no or "—"),
-        ("DOCUMENT ID", doc_id),
-        ("ISSUER", issuer),
-        ("ISSUE DATE", issue_date or "—"),
-    ]
-    for i, (k, v) in enumerate(rows):
-        ry = fy + 4 - i * 20
-        c.setFillColor(MUTED)
+        # Monogram Circle Emblem
+        mono_cx = PAGE_W / 2
+        mono_cy = PAGE_H - 74
+        c.setFillColor(HexColor("#FDF4D9"))
+        c.setStrokeColor(HexColor("#E8CF82"))
+        c.setLineWidth(1)
+        c.circle(mono_cx, mono_cy, 21, stroke=1, fill=1)
+        c.setFillColor(HexColor("#78350F"))
+        c.setFont("Times-Bold", 14)
+        c.drawCentredString(mono_cx, mono_cy - 5, monogram)
+
+        # Org Name
+        c.setFillColor(NAVY)
+        c.setFont("Helvetica-Bold", 19)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 120, issuer)
+
+        # City / Subtitle
+        c.setFillColor(HexColor("#64748B"))
         c.setFont("Helvetica-Bold", 7.5)
-        c.drawString(MARGIN + 26, ry, k)
-        c.setFillColor(INK)
-        c.setFont("Courier" if k in ("DOCUMENT ID", "CERTIFICATE ID") else "Helvetica", 9)
-        c.drawString(MARGIN + 150, ry, sanitize(v, k.lower())[:58])
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 134, "BENGALURU, INDIA")
 
-    # ---- sponsor logos (bottom left, strictly non-overlapping with QR code) ----
-    if branding and isinstance(branding, dict):
-        sponsors_b64 = branding.get("sponsors_base64") or []
-        if isinstance(sponsors_b64, list) and len(sponsors_b64) > 0:
-            c.setFillColor(MUTED)
-            c.setFont("Helvetica-Bold", 7.0)
-            c.drawString(MARGIN + 14, MARGIN + 86, "PARTNERS & SPONSORS")
-            sp_x = MARGIN + 14
-            max_sp_x = PAGE_W - MARGIN - 26 - 88 - 20 # Leave safe gap before QR box
-            for sp_b64 in sponsors_b64[:6]:
-                if sp_x + 44 > max_sp_x:
-                    break
-                sp_img = _safe_image_reader(sp_b64)
-                if sp_img:
-                    try:
-                        c.drawImage(sp_img, sp_x, MARGIN + 32, width=42, height=42, mask="auto", preserveAspectRatio=True)
-                        sp_x += 50
-                    except Exception:
-                        pass
+        # Gold Divider
+        c.setStrokeColor(GOLD)
+        c.setLineWidth(1)
+        c.line(PAGE_W / 2 - 96, PAGE_H - 144, PAGE_W / 2 + 96, PAGE_H - 144)
 
-    # ---- QR (bottom right) ----
-    qr_size = 88
-    qx = PAGE_W - MARGIN - 26 - qr_size
-    qy = MARGIN + 22
-    c.setFillColor(white)
-    c.setStrokeColor(GOLD)
-    c.setLineWidth(0.8)
-    c.roundRect(qx - 6, qy - 6, qr_size + 12, qr_size + 26, 5, stroke=1, fill=1)
-    c.drawImage(_qr_image(qr_text), qx, qy + 14, width=qr_size, height=qr_size, mask=None)
-    c.setFillColor(NAVY)
-    c.setFont("Helvetica-Bold", 6.6)
-    c.drawCentredString(qx + qr_size / 2, qy + 4, "SCAN TO VERIFY")
+        # Title: CERTIFICATE OF DEGREE CONFERRAL
+        c.setFillColor(GOLD)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 160, "CERTIFICATE OF DEGREE CONFERRAL")
 
-    # ---- footer ----
-    c.setFillColor(MUTED)
-    c.setFont("Helvetica", 7.4)
-    short_url = qr_text.replace("https://", "").replace("http://", "")
-    c.drawString(MARGIN + 10, MARGIN + 6, f"Verified by Evidentia · verify: {short_url[:64]}")
-    c.setFont("Courier", 6.6)
-    c.drawString(MARGIN + 10, MARGIN - 6, f"doc {doc_id}  ·  signed ECDSA-P256 + SHA-256  ·  registry-backed")
+        # Narrative Body
+        c.setFillColor(HexColor("#475569"))
+        c.setFont("Helvetica-Oblique", 11)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 194, "This is to certify that")
+
+        # Recipient Name
+        c.setFillColor(NAVY)
+        c.setFont("Times-Bold", 28)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 232, recipient)
+
+        # Underline
+        c.setStrokeColor(HexColor("#E5D394"))
+        c.setLineWidth(1.4)
+        c.line(PAGE_W / 2 - 80, PAGE_H - 242, PAGE_W / 2 + 80, PAGE_H - 242)
+
+        # Narrative Lines
+        c.setFillColor(HexColor("#334155"))
+        c.setFont("Helvetica", 11)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 268, "having successfully fulfilled all academic requirements and regulations has")
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 285, "been conferred the degree of")
+
+        # Degree Title
+        c.setFillColor(NAVY)
+        c.setFont("Helvetica-Bold", 16.5)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 315, course or "Bachelor of Technology in Computer Science & AI")
+
+        # Department
+        if department:
+            c.setFillColor(HexColor("#64748B"))
+            c.setFont("Helvetica", 9.5)
+            c.drawCentredString(PAGE_W / 2, PAGE_H - 333, department)
+
+        # Division / Grade Pill
+        if grade:
+            pill_y = PAGE_H - 364
+            c.setFillColor(HexColor("#F4F6F9"))
+            c.setStrokeColor(HexColor("#E0CD91"))
+            c.setLineWidth(0.8)
+            grade_w = min(c.stringWidth(grade, "Helvetica-Bold", 9.5) + 32, 380)
+            c.roundRect(PAGE_W / 2 - grade_w / 2, pill_y - 5, grade_w, 20, 10, stroke=1, fill=1)
+            c.setFillColor(NAVY)
+            c.setFont("Helvetica-Bold", 9.5)
+            c.drawCentredString(PAGE_W / 2, pill_y + 1, grade)
+
+        # Signatures & Official Seal
+        sig_y = 115
+        sig1 = fields.get("signatory_1") or "Dr. R. Menon (Registrar)"
+        sig2 = fields.get("signatory_2") or "Prof. K. S. Ramanathan (Vice Chancellor)"
+
+        # Left Signature
+        c.setStrokeColor(HexColor("#94A3B8"))
+        c.setLineWidth(0.8)
+        c.line(110, sig_y, 250, sig_y)
+        c.setFillColor(NAVY)
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawCentredString(180, sig_y - 14, sig1)
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica", 8)
+        c.drawCentredString(180, sig_y - 26, "Authorized Signatory")
+
+        # Center Official Seal
+        seal_cx = PAGE_W / 2
+        seal_cy = sig_y - 10
+        c.setStrokeColor(GOLD)
+        c.setLineWidth(1.5)
+        c.circle(seal_cx, seal_cy, 24, stroke=1, fill=0)
+        c.setLineWidth(0.6)
+        c.circle(seal_cx, seal_cy, 21, stroke=1, fill=0)
+        c.setFillColor(GOLD)
+        c.setFont("Helvetica-Bold", 11)
+        c.drawCentredString(seal_cx, seal_cy + 2, "★ ★ ★")
+        c.setFont("Helvetica-Bold", 6.8)
+        c.drawCentredString(seal_cx, seal_cy - 8, "OFFICIAL")
+
+        # Right Signature
+        c.setStrokeColor(HexColor("#94A3B8"))
+        c.setLineWidth(0.8)
+        c.line(PAGE_W - 250, sig_y, PAGE_W - 110, sig_y)
+        c.setFillColor(NAVY)
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawCentredString(PAGE_W - 180, sig_y - 14, sig2)
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica", 8)
+        c.drawCentredString(PAGE_W - 180, sig_y - 26, "Vice Chancellor")
+
+        # Security Footer
+        _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=False)
+
+    # =========================================================================
+    # 2. HACKATHON PARTICIPATION (Landscape Cyberpunk - HackathonParticipationView)
+    # =========================================================================
+    elif doc_type in ("hackathon_participation", "tpl_hack_part", "tpl_hack_part_01") and not bg_reader:
+        CYAN = HexColor("#06B6D4")
+        DARK_BG = HexColor("#0B0F19")
+        c.setFillColor(DARK_BG)
+        c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+
+        # Border
+        c.setStrokeColor(HexColor("#0891B2"))
+        c.setLineWidth(2)
+        c.rect(14, 14, PAGE_W - 28, PAGE_H - 28, stroke=1, fill=0)
+
+        # Header
+        c.setStrokeColor(HexColor("#1E293B"))
+        c.line(36, PAGE_H - 65, PAGE_W - 36, PAGE_H - 65)
+        c.setFillColor(white)
+        c.setFont("Helvetica-Bold", 18)
+        c.drawString(36, PAGE_H - 52, issuer)
+
+        # Participant Badge Box
+        c.setFillColor(HexColor("#0E2A38"))
+        c.setStrokeColor(CYAN)
+        c.setLineWidth(1)
+        c.rect(PAGE_W - 180, PAGE_H - 55, 144, 24, stroke=1, fill=1)
+        c.setFillColor(CYAN)
+        c.setFont("Helvetica-Bold", 8.5)
+        c.drawCentredString(PAGE_W - 108, PAGE_H - 43, "PARTICIPANT BADGE")
+
+        # Subtitle
+        c.setFillColor(CYAN)
+        c.setFont("Helvetica-Bold", 8.5)
+        c.drawString(36, PAGE_H - 100, "CERTIFICATE OF CONTENDER PARTICIPATION")
+
+        # Recipient
+        c.setFillColor(white)
+        c.setFont("Helvetica-Bold", 30)
+        c.drawString(36, PAGE_H - 142, recipient)
+
+        # Squad
+        team = fields.get("team_name") or "ByteForge Syndicate"
+        c.setFillColor(HexColor("#94A3B8"))
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawString(36, PAGE_H - 172, f"SQUAD: {team}")
+
+        # Narrative
+        hack = fields.get("hackathon_name") or "ETHGlobal Nexus 2026"
+        track = fields.get("theme_track") or "Autonomous Agentic Systems & Cryptographic Proofs"
+        dates = fields.get("event_dates") or "October 8–10, 2026"
+
+        c.setFillColor(HexColor("#CBD5E1"))
+        c.setFont("Helvetica", 11)
+        c.drawString(36, PAGE_H - 210, f"successfully hacked, built, and shipped functional code at {hack}")
+        c.drawString(36, PAGE_H - 228, f"under the track: {track}.")
+
+        c.setFillColor(HexColor("#94A3B8"))
+        c.setFont("Helvetica", 9.5)
+        c.drawString(36, PAGE_H - 260, f"Dates: {dates}")
+
+        # Organizer Sign
+        organizer = fields.get("lead_organizer") or "Siddharth Sengupta (Lead Hackathon Director)"
+        c.setStrokeColor(HexColor("#1E293B"))
+        c.line(36, 120, PAGE_W - 36, 120)
+
+        c.setFillColor(HexColor("#94A3B8"))
+        c.setFont("Helvetica", 8)
+        c.drawString(36, 102, "AUTHORIZED ORGANIZER")
+        c.setFillColor(white)
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawString(36, 88, organizer)
+
+        c.setFillColor(HexColor("#A855F7"))
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawRightString(PAGE_W - 36, 92, "VERIFIED HACKATHON HASH")
+
+        _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=True)
+
+    # =========================================================================
+    # 3. HACKATHON WINNER & PRESTIGE AWARD (Landscape Gold - HackathonWinnerView)
+    # =========================================================================
+    elif doc_type in ("hackathon_winner", "tpl_hack_win", "tpl_hack_win_01") and not bg_reader:
+        GOLD_ACCENT = HexColor("#F59E0B")
+        DARK_BG = HexColor("#090D16")
+        c.setFillColor(DARK_BG)
+        c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+
+        # Border
+        c.setStrokeColor(GOLD_ACCENT)
+        c.setLineWidth(3)
+        c.rect(14, 14, PAGE_W - 28, PAGE_H - 28, stroke=1, fill=0)
+
+        # Header
+        c.setStrokeColor(HexColor("#332408"))
+        c.line(36, PAGE_H - 65, PAGE_W - 36, PAGE_H - 65)
+        c.setFillColor(HexColor("#FDF6B2"))
+        c.setFont("Helvetica-Bold", 18)
+        c.drawString(36, PAGE_H - 52, issuer)
+
+        # Rank badge
+        rank = fields.get("rank_position") or "1ST PLACE GRAND CHAMPION"
+        c.setFillColor(HexColor("#332408"))
+        c.setStrokeColor(GOLD_ACCENT)
+        c.roundRect(PAGE_W - 230, PAGE_H - 56, 194, 26, 4, stroke=1, fill=1)
+        c.setFillColor(GOLD_ACCENT)
+        c.setFont("Helvetica-Bold", 8.5)
+        c.drawCentredString(PAGE_W - 133, PAGE_H - 43, f"★ {rank}")
+
+        # Main commendation
+        c.setFillColor(GOLD_ACCENT)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 110, "PRESTIGIOUS MERIT AWARD")
+
+        c.setFillColor(white)
+        c.setFont("Times-Bold", 30)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 150, recipient)
+
+        team = fields.get("team_name") or "Team Hyperion Alpha"
+        c.setFillColor(HexColor("#FDE68A"))
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 172, f"SQUAD: {team}")
+
+        hack = fields.get("hackathon_name") or "National Builders Conclave 2026"
+        project = fields.get("project_title") or "Evidentia: Realtime Multi-Modal Verification Protocol"
+        prize = fields.get("prize_amount")
+
+        c.setFillColor(HexColor("#E2E8F0"))
+        c.setFont("Helvetica", 11)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 210, f"Awarded for outstanding engineering mastery and winning submission at {hack} with the project:")
+
+        c.setFillColor(HexColor("#FDE047"))
+        c.setFont("Helvetica-Bold", 13.5)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 235, f'"{project}"')
+
+        if prize:
+            c.setFillColor(GOLD_ACCENT)
+            c.setFont("Helvetica-Bold", 9.5)
+            c.drawCentredString(PAGE_W / 2, PAGE_H - 262, f"HONORARIUM: {prize}")
+
+        # Jury Remarks & Signature
+        chair = fields.get("jury_chair") or "Dr. A. V. Natarajan, Head of Jury"
+        c.setStrokeColor(HexColor("#332408"))
+        c.line(36, 120, PAGE_W - 36, 120)
+
+        c.setFillColor(HexColor("#CBD5E1"))
+        c.setFont("Helvetica-Bold", 9)
+        c.drawRightString(PAGE_W - 36, 100, chair)
+        c.setFillColor(HexColor("#94A3B8"))
+        c.setFont("Helvetica", 7.5)
+        c.drawRightString(PAGE_W - 36, 88, "Head of Jury")
+
+        _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=True)
+
+    # =========================================================================
+    # 4. WORKSHOP & BOOTCAMP (Landscape Teal - WorkshopBootcampView)
+    # =========================================================================
+    elif doc_type in ("workshop_completion", "tpl_workshop", "tpl_work_01") and not bg_reader:
+        TEAL = HexColor("#0D9488")
+        c.setFillColor(PARCHMENT)
+        c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+
+        c.setStrokeColor(TEAL)
+        c.setLineWidth(3.5)
+        c.rect(14, 14, PAGE_W - 28, PAGE_H - 28, stroke=1, fill=0)
+
+        # Header
+        c.setStrokeColor(HexColor("#CCFBF1"))
+        c.line(36, PAGE_H - 65, PAGE_W - 36, PAGE_H - 65)
+        c.setFillColor(HexColor("#134E4A"))
+        c.setFont("Helvetica-Bold", 18)
+        c.drawString(36, PAGE_H - 52, issuer)
+
+        hours = fields.get("duration_hours") or "48"
+        c.setFillColor(white)
+        c.setStrokeColor(TEAL)
+        c.circle(PAGE_W - 60, PAGE_H - 45, 18, stroke=1, fill=1)
+        c.setFillColor(TEAL)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(PAGE_W - 60, PAGE_H - 48, f"{hours}h")
+
+        # Body
+        c.setFillColor(HexColor("#E11D48"))
+        c.setFont("Helvetica-Bold", 8.5)
+        c.drawString(36, PAGE_H - 100, "PROFESSIONAL SKILL CERTIFICATION")
+
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 28)
+        c.drawString(36, PAGE_H - 138, recipient)
+
+        c.setFillColor(HexColor("#475569"))
+        c.setFont("Helvetica", 10.5)
+        c.drawString(36, PAGE_H - 165, "has successfully completed the intensive hands-on bootcamp:")
+
+        w_title = fields.get("workshop_title") or course or "Advanced Full-Stack Rust & High-Concurrency Systems"
+        c.setFillColor(TEAL)
+        c.setFont("Helvetica-Bold", 15)
+        c.drawString(36, PAGE_H - 192, w_title)
+
+        # Evaluation & Instructor
+        instructor = fields.get("lead_instructor") or "Tanmay Agarwal, Lead Instructor"
+        score = fields.get("score_achieved") or "98% Top Decile Capstone Score"
+
+        c.setStrokeColor(HexColor("#CCFBF1"))
+        c.line(36, 120, PAGE_W - 36, 120)
+
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica", 7.5)
+        c.drawString(36, 102, "ACADEMIC EVALUATION:")
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(36, 88, score)
+
+        c.drawRightString(PAGE_W - 36, 100, instructor)
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica", 7.5)
+        c.drawRightString(PAGE_W - 36, 88, "Lead Instructor")
+
+        _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=False)
+
+    # =========================================================================
+    # 5. OFFICIAL MARKSHEET / TRANSCRIPT (Portrait - MarksheetView)
+    # =========================================================================
+    elif doc_type in ("marksheet", "tpl_marksheet", "tpl_mark_01") and not bg_reader:
+        c.setFillColor(white)
+        c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+
+        c.setStrokeColor(HexColor("#E2E8F0"))
+        c.setLineWidth(1.5)
+        c.rect(16, 16, PAGE_W - 32, PAGE_H - 32, stroke=1, fill=0)
+
+        # Header Band
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(36, PAGE_H - 50, issuer)
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica", 8)
+        c.drawString(36, PAGE_H - 62, "ACCREDITED ISSUING AUTHORITY")
+
+        c.setStrokeColor(HexColor("#0F172A"))
+        c.setLineWidth(2)
+        c.line(36, PAGE_H - 72, PAGE_W - 36, PAGE_H - 72)
+
+        # Statement bar
+        session = fields.get("exam_session") or "May–June 2026"
+        c.setFillColor(HexColor("#F1F5F9"))
+        c.rect(36, PAGE_H - 96, PAGE_W - 72, 18, stroke=0, fill=1)
+        c.setFillColor(HexColor("#1E293B"))
+        c.setFont("Helvetica-Bold", 7.5)
+        c.drawString(42, PAGE_H - 89, "OFFICIAL STATEMENT OF GRADES & CUMULATIVE TRANSCRIPT")
+        c.setFont("Helvetica", 7)
+        c.drawRightString(PAGE_W - 42, PAGE_H - 89, f"EXAM SESSION: {session}")
+
+        # Details Grid
+        gy = PAGE_H - 120
+        c.setFillColor(HexColor("#F8FAFC"))
+        c.setStrokeColor(HexColor("#E2E8F0"))
+        c.rect(36, gy - 44, PAGE_W - 72, 44, stroke=1, fill=1)
+
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica", 7.5)
+        c.drawString(44, gy - 14, "CANDIDATE:")
+        c.drawString(44, gy - 26, "ENROLLMENT ID:")
+        c.drawString(44, gy - 38, "SEMESTER:")
+
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(110, gy - 14, recipient)
+        c.drawString(110, gy - 26, fields.get("enrollment_no") or cert_no)
+        c.drawString(110, gy - 38, fields.get("semester") or "Semester VIII")
+
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica", 7.5)
+        c.drawString(300, gy - 14, "ROLL NO:")
+        c.drawString(300, gy - 26, "PROGRAM:")
+        c.drawString(300, gy - 38, "STATUS:")
+
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(360, gy - 14, cert_no)
+        c.drawString(360, gy - 26, course or "B.Tech Computer Science")
+        c.setFillColor(HexColor("#059669"))
+        c.drawString(360, gy - 38, fields.get("result_status") or "PASS - DISTINCTION")
+
+        # Subjects Table
+        tbl_y = gy - 62
+        c.setFillColor(HexColor("#0F172A"))
+        c.rect(36, tbl_y - 16, PAGE_W - 72, 16, stroke=0, fill=1)
+        c.setFillColor(white)
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(42, tbl_y - 11, "CODE")
+        c.drawString(90, tbl_y - 11, "COURSE TITLE")
+        c.drawCentredString(320, tbl_y - 11, "CR")
+        c.drawCentredString(360, tbl_y - 11, "INT")
+        c.drawCentredString(400, tbl_y - 11, "EXT")
+        c.drawCentredString(440, tbl_y - 11, "TOT")
+        c.drawCentredString(490, tbl_y - 11, "GRD")
+
+        subjects = fields.get("subjects_table")
+        if not isinstance(subjects, list) or len(subjects) == 0:
+            subjects = [
+                {"code": "CS801", "name": "Distributed Consensus Systems", "credits": 4, "internal": 28, "external": 67, "total": 95, "grade": "O"},
+                {"code": "CS802", "name": "Applied Cryptography & Zero-Knowledge", "credits": 4, "internal": 29, "external": 64, "total": 93, "grade": "O"},
+                {"code": "CS803", "name": "Machine Learning Infrastructure", "credits": 3, "internal": 27, "external": 61, "total": 88, "grade": "A+"},
+                {"code": "CS804", "name": "Cloud Native Microservices", "credits": 3, "internal": 26, "external": 60, "total": 86, "grade": "A+"},
+                {"code": "CS899", "name": "Major Capstone Project", "credits": 6, "internal": 48, "external": 98, "total": 146, "grade": "O"}
+            ]
+
+        curr_y = tbl_y - 16
+        for i, s in enumerate(subjects[:10]):
+            curr_y -= 18
+            bg_c = HexColor("#F8FAFC") if i % 2 == 1 else white
+            c.setFillColor(bg_c)
+            c.rect(36, curr_y, PAGE_W - 72, 18, stroke=0, fill=1)
+            c.setStrokeColor(HexColor("#E2E8F0"))
+            c.line(36, curr_y, PAGE_W - 36, curr_y)
+
+            c.setFillColor(HexColor("#0F172A"))
+            c.setFont("Courier-Bold", 7.5)
+            c.drawString(42, curr_y + 5, str(s.get("code") or "—"))
+            c.setFont("Helvetica", 7.5)
+            c.drawString(90, curr_y + 5, str(s.get("name") or "—")[:36])
+            c.drawCentredString(320, curr_y + 5, str(s.get("credits") or "—"))
+            c.drawCentredString(360, curr_y + 5, str(s.get("internal") or "—"))
+            c.drawCentredString(400, curr_y + 5, str(s.get("external") or "—"))
+            c.setFont("Helvetica-Bold", 7.5)
+            c.drawCentredString(440, curr_y + 5, str(s.get("total") or "—"))
+            c.setFillColor(HexColor("#1D4ED8"))
+            c.drawCentredString(490, curr_y + 5, str(s.get("grade") or "—"))
+
+        # Scorecard box
+        sc_y = curr_y - 45
+        c.setFillColor(HexColor("#F8FAFC"))
+        c.setStrokeColor(HexColor("#E2E8F0"))
+        c.rect(36, sc_y, PAGE_W - 72, 38, stroke=1, fill=1)
+
+        sgpa = fields.get("sgpa") or "9.42"
+        cgpa = fields.get("cgpa") or "9.18"
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(48, sc_y + 14, f"SEMESTER SGPA:  {sgpa}")
+        c.drawString(180, sc_y + 14, f"CUMULATIVE CGPA:  {cgpa}")
+
+        # Stamp
+        c.setStrokeColor(HexColor("#DC2626"))
+        c.setLineWidth(1.5)
+        c.circle(PAGE_W - 80, sc_y + 18, 14, stroke=1, fill=0)
+        c.setFillColor(HexColor("#DC2626"))
+        c.setFont("Helvetica-Bold", 5)
+        c.drawCentredString(PAGE_W - 80, sc_y + 19, "VERIFIED")
+        c.drawCentredString(PAGE_W - 80, sc_y + 13, "EXAM BR")
+
+        _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=False)
+
+    # =========================================================================
+    # 6. BONAFIDE CERTIFICATE (Portrait Letterhead - BonafideCertificateView)
+    # =========================================================================
+    elif doc_type in ("bonafide", "tpl_bonafide", "tpl_bona_01") and not bg_reader:
+        c.setFillColor(HexColor("#FAFAFA"))
+        c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+
+        # Teal top banner
+        c.setFillColor(HexColor("#0F766E"))
+        c.rect(0, PAGE_H - 10, PAGE_W, 10, stroke=0, fill=1)
+
+        # Letterhead Header
+        c.setFillColor(HexColor("#134E4A"))
+        c.setFont("Helvetica-Bold", 19)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 46, issuer)
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica-Bold", 8)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 60, "ACCREDITED ISSUING AUTHORITY")
+
+        c.setStrokeColor(HexColor("#CCFBF1"))
+        c.setLineWidth(1)
+        c.line(40, PAGE_H - 74, PAGE_W - 40, PAGE_H - 74)
+
+        # Ref & Date
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Courier", 8)
+        c.drawString(40, PAGE_H - 96, f"REF NO: {cert_no}")
+        c.drawRightString(PAGE_W - 40, PAGE_H - 96, f"DATE: {issue_date}")
+
+        # Badge
+        c.setFillColor(HexColor("#CCFBF1"))
+        c.setStrokeColor(HexColor("#0F766E"))
+        c.roundRect(PAGE_W / 2 - 80, PAGE_H - 134, 160, 22, 3, stroke=1, fill=1)
+        c.setFillColor(HexColor("#0F766E"))
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 124, "BONAFIDE CERTIFICATE")
+
+        # Narrative Letter
+        ny = PAGE_H - 180
+        c.setFillColor(HexColor("#475569"))
+        c.setFont("Helvetica-Oblique", 11)
+        c.drawString(40, ny, "To Whomsoever It May Concern,")
+
+        guardian = fields.get("guardian_name") or "Mr. Anil Verma"
+        year = fields.get("academic_year") or "Final Year (Semester IV)"
+        session = fields.get("academic_session") or "2025–2026"
+        purpose = fields.get("purpose") or "Passport Application"
+        remark = fields.get("conduct_remark") or "Satisfactory and obedient with good moral conduct"
+
+        c.setFillColor(HexColor("#1E293B"))
+        c.setFont("Times-Roman", 12.5)
+        ny -= 30
+        c.drawString(60, ny, f"This is to certify that {recipient.upper()}, son/daughter of {guardian},")
+        ny -= 20
+        c.drawString(40, ny, f"bearing permanent roll number {cert_no}, is a bonafide student of this institution.")
+
+        ny -= 30
+        c.drawString(60, ny, f"He/She is currently pursuing {course or 'Data Analytics'}")
+        ny -= 20
+        c.drawString(40, ny, f"in the {year} during the academic session {session}.")
+
+        ny -= 30
+        c.drawString(60, ny, f"This certificate is formally issued upon the student's request for the specific purpose")
+        ny -= 20
+        c.drawString(40, ny, f"of {purpose}. To the best of our institutional knowledge, their conduct and character")
+        ny -= 20
+        c.drawString(40, ny, f"have been {remark}.")
+
+        # Signature
+        sign = fields.get("principal_sign") or "Dr. Sunita K. Rao (Dean of Student Welfare)"
+        c.setStrokeColor(HexColor("#94A3B8"))
+        c.line(PAGE_W - 200, 140, PAGE_W - 40, 140)
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(PAGE_W - 120, 126, sign)
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica", 7.5)
+        c.drawCentredString(PAGE_W - 120, 114, "Dean / Head of Institution")
+
+        _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=False)
+
+    # =========================================================================
+    # 7. CORPORATE INTERNSHIP (Portrait Executive - InternshipCertificateView)
+    # =========================================================================
+    elif doc_type in ("internship_certificate", "tpl_internship", "tpl_intern_01") and not bg_reader:
+        c.setFillColor(white)
+        c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+
+        # Navy Left Accent Bar
+        c.setFillColor(HexColor("#1E40AF"))
+        c.rect(0, 0, 14, PAGE_H, stroke=0, fill=1)
+
+        # Header
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 17)
+        c.drawString(36, PAGE_H - 48, issuer)
+
+        c.setStrokeColor(HexColor("#E2E8F0"))
+        c.line(36, PAGE_H - 68, PAGE_W - 36, PAGE_H - 68)
+
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica-Bold", 7.5)
+        c.drawString(36, PAGE_H - 84, "CORPORATE INTERNSHIP EXPERIENCE RECORD")
+        c.drawRightString(PAGE_W - 36, PAGE_H - 84, f"EMP REF: {cert_no}")
+
+        # Intern Details
+        c.setFillColor(HexColor("#1E40AF"))
+        c.setFont("Helvetica-Bold", 8.5)
+        c.drawString(36, PAGE_H - 114, "EXPERIENCE & PERFORMANCE ATTESTATION")
+
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 26)
+        c.drawString(36, PAGE_H - 148, recipient)
+
+        role = fields.get("role") or fields.get("role_title") or course or "Software Engineering Intern — Core Systems"
+        dept = fields.get("department") or "Platform Security & Infrastructure"
+        s_date = fields.get("start_date") or "2026-04-01"
+        e_date = fields.get("end_date") or "2026-09-30"
+
+        c.setFillColor(HexColor("#F8FAFC"))
+        c.setStrokeColor(HexColor("#E2E8F0"))
+        c.rect(36, PAGE_H - 212, PAGE_W - 72, 50, stroke=1, fill=1)
+
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica", 7.5)
+        c.drawString(46, PAGE_H - 176, f"ROLE:  {role}")
+        c.drawString(46, PAGE_H - 190, f"DEPARTMENT:  {dept}")
+        c.drawString(46, PAGE_H - 204, f"TENURE:  {s_date}  →  {e_date}")
+
+        # Deliverables
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(36, PAGE_H - 238, "KEY ENGINEERING DELIVERABLES & IMPACT:")
+
+        projects = fields.get("projects_delivered")
+        if not isinstance(projects, list):
+            projects = [
+                "Built deterministic ECDSA signing microservice",
+                "Implemented forensic visual diff engine",
+                "Authored SDK verification test kits"
+            ]
+        py = PAGE_H - 256
+        for p in projects[:4]:
+            c.setFillColor(HexColor("#334155"))
+            c.setFont("Helvetica", 9)
+            c.drawString(48, py, f"•  {p}")
+            py -= 18
+
+        # Rating
+        rating = fields.get("rating") or "5 Stars - Outstanding Performance"
+        c.setFillColor(HexColor("#EFF6FF"))
+        c.setStrokeColor(HexColor("#BFDBFE"))
+        c.roundRect(PAGE_W / 2 - 120, py - 24, 240, 24, 4, stroke=1, fill=1)
+        c.setFillColor(HexColor("#1E40AF"))
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(PAGE_W / 2, py - 13, f"SUPERVISOR APPRAISAL: ★ {rating}")
+
+        # Supervisor Sign
+        sup = fields.get("supervisor_name") or "Arvind Swaminathan (VP of Engineering)"
+        c.setStrokeColor(HexColor("#CBD5E1"))
+        c.line(PAGE_W - 220, 130, PAGE_W - 36, 130)
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(PAGE_W - 128, 116, sup)
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Helvetica", 7.5)
+        c.drawCentredString(PAGE_W - 128, 104, "VP of Engineering / Supervisor")
+
+        _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=False)
+
+    # =========================================================================
+    # 8. DEFAULT FALLBACK
+    # =========================================================================
+    else:
+        c.setFillColor(PARCHMENT if is_landscape else white)
+        c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+
+        c.setStrokeColor(NAVY)
+        c.setLineWidth(4)
+        c.rect(14, 14, PAGE_W - 28, PAGE_H - 28, stroke=1, fill=0)
+
+        c.setFillColor(NAVY)
+        c.setFont("Helvetica-Bold", 20)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 70, issuer)
+
+        c.setFillColor(GOLD)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 86, "OFFICIAL VERIFIABLE CREDENTIAL")
+
+        c.setStrokeColor(GOLD)
+        c.setLineWidth(1)
+        c.line(PAGE_W / 2 - 100, PAGE_H - 96, PAGE_W / 2 + 100, PAGE_H - 96)
+
+        c.setFillColor(NAVY)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 150, title)
+
+        c.setFillColor(HexColor("#475569"))
+        c.setFont("Helvetica-Oblique", 11)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 180, "This is to certify that")
+
+        c.setFillColor(NAVY)
+        c.setFont("Times-Bold", 28)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 220, recipient)
+
+        c.setFillColor(HexColor("#334155"))
+        c.setFont("Helvetica", 11)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 255, f"has successfully fulfilled all requirements for {course or title}")
+
+        if grade:
+            c.setFont("Helvetica-Bold", 10.5)
+            c.setFillColor(NAVY)
+            c.drawCentredString(PAGE_W / 2, PAGE_H - 280, f"Grade / Honours: {grade}")
+
+        _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=False)
 
     c.showPage()
     c.save()
