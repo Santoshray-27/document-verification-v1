@@ -35,9 +35,13 @@ DOC_TYPE_TITLES = {
     "commercial_invoice": "COMMERCIAL INVOICE",
     "marksheet": "MARKSHEET",
     "bonafide": "BONAFIDE CERTIFICATE",
+    "hackathon_participation": "HACKATHON CERTIFICATE OF PARTICIPATION",
+    "hackathon_winner": "HACKATHON WINNER & EXCELLENCE AWARD",
+    "workshop_completion": "CERTIFICATE OF WORKSHOP COMPLETION",
+    "internship_certificate": "CERTIFICATE OF INTERNSHIP COMPLETION",
 }
 
-MAX_LEN = {"name": 60, "course": 80, "grade": 20, "certificate_number": 40, "issue_date": 30, "issuer_name": 70}
+MAX_LEN = {"name": 60, "course": 80, "grade": 30, "certificate_number": 40, "issue_date": 30, "issuer_name": 70}
 
 
 def sanitize(value: str, key: str = "") -> str:
@@ -314,6 +318,119 @@ def render_certificate_pdf(
                 line_y -= 20
             if issue_date:
                 c.drawCentredString(PAGE_W / 2, line_y, f"Issued on {issue_date}")
+
+        elif doc_type in ("hackathon_participation", "hackathon_winner"):
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 11.5)
+            action_text = "This certificate is proudly awarded to"
+            c.drawCentredString(PAGE_W / 2, y - 34, action_text)
+
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(accent_color or GOLD)
+            c.setLineWidth(1.2)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+
+            c.setFillColor(INK)
+            c.setFont("Helvetica", 11.5)
+            line_y = y - 112
+            if doc_type == "hackathon_winner":
+                c.drawCentredString(PAGE_W / 2, line_y, f"for demonstrating exceptional engineering excellence in")
+                line_y -= 20
+                event_name = course or "EVIDENTIA National Hackathon"
+                c.setFont("Helvetica-Bold", 13.5)
+                c.setFillColor(primary_color or NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, event_name)
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+                if grade:
+                    c.setFont("Helvetica-Bold", 13.0)
+                    c.setFillColor(GOLD)
+                    c.drawCentredString(PAGE_W / 2, line_y, f"Standing / Award: {grade}")
+                    c.setFillColor(INK)
+                    c.setFont("Helvetica", 11.5)
+                    line_y -= 20
+            else:
+                c.drawCentredString(PAGE_W / 2, line_y, f"for active and successful participation in")
+                line_y -= 20
+                event_name = course or "EVIDENTIA Hackathon 2026"
+                c.setFont("Helvetica-Bold", 13.0)
+                c.setFillColor(primary_color or NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, event_name)
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+                if grade:
+                    c.drawCentredString(PAGE_W / 2, line_y, f"Track / Team Recognition: {grade}")
+                    line_y -= 20
+
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Presented on {issue_date}")
+
+        elif doc_type == "workshop_completion":
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 11.5)
+            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
+
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(GOLD)
+            c.setLineWidth(0.9)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+
+            c.setFillColor(INK)
+            c.setFont("Helvetica", 11.5)
+            line_y = y - 112
+            c.drawCentredString(PAGE_W / 2, line_y, "has successfully attended and completed the intensive workshop on")
+            line_y -= 20
+            if course:
+                c.setFont("Helvetica-Bold", 13)
+                c.setFillColor(primary_color or NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, course)
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+            if grade:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Proficiency Level: {grade}")
+                line_y -= 20
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Awarded on {issue_date}")
+
+        elif doc_type == "internship_certificate":
+            c.setFillColor(MUTED)
+            c.setFont("Helvetica", 11.5)
+            c.drawCentredString(PAGE_W / 2, y - 34, "This is to certify that")
+
+            c.setFillColor(INK)
+            c.setFont("Times-Bold", 27)
+            c.drawCentredString(PAGE_W / 2, y - 74, name[:44])
+            c.setStrokeColor(GOLD)
+            c.setLineWidth(0.9)
+            name_w = min(c.stringWidth(name[:44], "Times-Bold", 27) + 30, PAGE_W - 160)
+            c.line(PAGE_W / 2 - name_w / 2, y - 84, PAGE_W / 2 + name_w / 2, y - 84)
+
+            c.setFillColor(INK)
+            c.setFont("Helvetica", 11.5)
+            line_y = y - 112
+            c.drawCentredString(PAGE_W / 2, line_y, "has successfully completed a practical internship program as")
+            line_y -= 20
+            if course:
+                c.setFont("Helvetica-Bold", 13)
+                c.setFillColor(primary_color or NAVY)
+                c.drawCentredString(PAGE_W / 2, line_y, course)
+                c.setFillColor(INK)
+                c.setFont("Helvetica", 11.5)
+                line_y -= 20
+            if grade:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Performance Evaluation: {grade}")
+                line_y -= 20
+            if issue_date:
+                c.drawCentredString(PAGE_W / 2, line_y, f"Dated: {issue_date}")
 
         else:
             c.setFillColor(MUTED)

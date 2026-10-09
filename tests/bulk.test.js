@@ -150,3 +150,70 @@ test('Batch database persistence and status tracking', () => {
   const crossTenant = db.prepare('SELECT * FROM batch_jobs WHERE id = ? AND issuer_id = ?').get(batchId, TEST_ISSUER_2);
   assert.strictEqual(crossTenant, undefined, 'Issuer 2 must not see Issuer 1 batch');
 });
+
+test('XLSX parser correctly loads binary workbook via python openpyxl', () => {
+  const { spawnSync } = require('child_process');
+  // Generate a test XLSX in memory
+  const pyGen = `
+import openpyxl, io, sys
+wb = openpyxl.Workbook()
+ws = wb.active
+ws.append(["Student Name", "Certificate No", "Course", "Grade", "Issue Date"])
+ws.append(["Tanya Verma", "CERT-XLSX-001", "AI Engineering", "A+", "2026-11-20"])
+buf = io.BytesIO()
+wb.save(buf)
+sys.stdout.buffer.write(buf.getvalue())
+`;
+  const genRes = spawnSync('python', ['-c', pyGen], { encoding: 'buffer' });
+  assert.ok(genRes.stdout && genRes.stdout.length > 0, 'Should generate binary XLSX');
+
+  const parsedRows = bulkSvc.parseSpreadsheet(genRes.stdout, 'students.xlsx');
+  assert.strictEqual(parsedRows.length, 2, 'Should parse header plus 1 data row from XLSX');
+  assert.strictEqual(parsedRows[0][0], 'Student Name');
+  assert.strictEqual(parsedRows[1][0], 'Tanya Verma');
+  assert.strictEqual(parsedRows[1][1], 'CERT-XLSX-001');
+});
+
+test('Idempotency reconciliation safely re-links existing certificate without duplicate issuance', () => {
+  // Test reconciliation: create dummy registered doc
+  const docId = cryptoSvc.uuid();
+  const testCertNum = `CERT-RECON-${Date.now()}`;
+  const now = new Date().toISOString();
+  const dummyPdf = path.join(require('../backend-node/config').storageDir, 'issued', `${docId}.pdf`);
+  fs.mkdirSync(path.dirname(dummyPdf), { recursive: true });
+  fs.writeFileSync(dummyPdf, Buffer.from('%PDF-1.4 dummy content'));
+
+  const validKey = db.prepare("SELECT kid FROM issuer_keys WHERE status = 'active' LIMIT 1").get();
+  const kid = validKey ? validKey.kid : 'key_demo_active';
+
+  // Insert dummy document
+  db.prepare(`
+    INSERT INTO documents (doc_id, issuer_id, kid, doc_type, fields_json, fields_hash, file_hash,
+      manifest_json, signature, issued_at, status, pdf_path, created_at)
+    VALUES (?, ?, ?, 'academic_certificate', ?, 'dummy_hash', 'dummy_hash',
+      '{}', 'dummy_sig', ?, 'active', ?, ?)
+  `).run(docId, TEST_ISSUER_1, kid, JSON.stringify({ name: 'Aarav Sharma', certificate_number: testCertNum }), now, dummyPdf, now);
+
+  // Setup batch and row
+  const bId = cryptoSvc.uuid();
+  db.prepare(`
+    INSERT INTO batch_jobs (id, issuer_id, template_id, template_version, total_rows, pending_rows, status, created_at)
+    VALUES (?, ?, 'tpl_acad_01', 1, 1, 1, 'pending', ?)
+  `).run(bId, TEST_ISSUER_1, now);
+
+  const rId = cryptoSvc.uuid();
+  db.prepare(`
+    INSERT INTO batch_rows (id, batch_id, row_number, raw_data_json, mapped_data_json, validation_status, status, created_at)
+    VALUES (?, ?, 1, '{}', ?, 'valid', 'pending', ?)
+  `).run(rId, bId, JSON.stringify({ name: 'Aarav Sharma', certificate_number: testCertNum }), now);
+
+  // Run processBatchAsync
+  return bulkSvc.processBatchAsync(bId, { id: 1, issuer_id: TEST_ISSUER_1, role: 'issuer' }).then(() => {
+    const updatedRow = db.prepare('SELECT * FROM batch_rows WHERE id = ?').get(rId);
+    assert.strictEqual(updatedRow.status, 'succeeded', 'Row should be reconciled as succeeded');
+    assert.strictEqual(updatedRow.doc_id, docId, 'Row should re-link exact existing doc_id without reissuing');
+
+    // Clean up test file
+    try { fs.unlinkSync(dummyPdf); } catch {}
+  });
+});

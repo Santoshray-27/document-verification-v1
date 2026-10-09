@@ -6,23 +6,39 @@ const templateService = require('../backend-node/src/services/template.service')
 // Initialize DB schema to ensure it's up to date
 db.migrate();
 
-test('Templates are seeded correctly on boot', () => {
+test('Templates are seeded correctly on boot with 10 built-in catalog designs', () => {
   const all = templateService.getAllTemplates();
-  assert.ok(all.length >= 6, 'Should seed at least 6 default templates');
+  assert.strictEqual(all.length >= 10, true, 'Should seed 10 default templates');
   
   const acad = all.find(t => t.id === 'tpl_acad_01');
   assert.ok(acad, 'Academic certificate should exist');
   assert.strictEqual(acad.category, 'COLLEGES AND UNIVERSITIES');
   assert.strictEqual(acad.doc_type, 'academic_certificate');
+
+  const hackPart = all.find(t => t.id === 'tpl_hack_part_01');
+  assert.ok(hackPart, 'Hackathon participation template must exist');
+  assert.strictEqual(hackPart.doc_type, 'hackathon_participation');
+
+  const hackWin = all.find(t => t.id === 'tpl_hack_win_01');
+  assert.ok(hackWin, 'Hackathon winner template must exist');
+  assert.strictEqual(hackWin.doc_type, 'hackathon_winner');
+
+  const work = all.find(t => t.id === 'tpl_work_01');
+  assert.ok(work, 'Workshop template must exist');
+
+  const intern = all.find(t => t.id === 'tpl_intern_01');
+  assert.ok(intern, 'Internship template must exist');
 });
 
 test('Recommendations by organization type', () => {
   const uni = templateService.getRecommendationsByOrgType('university');
   assert.ok(uni.some(t => t.id === 'tpl_acad_01'));
+  assert.ok(uni.some(t => t.id === 'tpl_hack_part_01'), 'Should recommend hackathon to university');
   assert.ok(!uni.some(t => t.id === 'tpl_emp_01'), 'Should not recommend company offer to university');
 
   const comp = templateService.getRecommendationsByOrgType('company');
   assert.ok(comp.some(t => t.id === 'tpl_emp_01'));
+  assert.ok(comp.some(t => t.id === 'tpl_intern_01'), 'Should recommend internship to company');
   assert.ok(!comp.some(t => t.id === 'tpl_acad_01'), 'Should not recommend acad cert to company');
 });
 
