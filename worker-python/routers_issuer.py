@@ -239,6 +239,27 @@ def run_in_process_issuance(user: dict, fields: dict, doc_type: str = "academic_
         "SELECT * FROM issuer_keys WHERE issuer_id = %s AND status = 'active' ORDER BY created_at DESC LIMIT 1",
         (issuer["issuer_id"],)
     )
+    
+    # In cloud/Render environment, verify key file is actually present on disk
+    from crypto_service import generate_key_pair, private_key_path_for, new_id
+    key_exists = False
+    if key and key.get("kid"):
+        key_exists = os.path.exists(private_key_path_for(key["kid"]))
+    
+    if not key or not key_exists:
+        # Auto-provision a fresh ECDSA P-256 keypair for this issuer on disk and in database
+        kid = new_id("key")
+        pair = generate_key_pair(kid)
+        now_iso = datetime.now(timezone.utc).isoformat()
+        execute(
+            """
+            INSERT INTO issuer_keys (kid, issuer_id, public_key_pem, private_key_path, algorithm, status, created_at)
+            VALUES (%s, %s, %s, %s, 'ECDSA-P256-SHA256', 'active', %s)
+            """,
+            (kid, issuer["issuer_id"], pair["public_key_pem"], pair["private_path"], now_iso)
+        )
+        key = query_one("SELECT * FROM issuer_keys WHERE kid = %s", (kid,))
+
     if not key:
         raise HTTPException(status_code=400, detail={"code": "KEY_NOT_FOUND", "message": "Issuer has no active signing key"})
 
