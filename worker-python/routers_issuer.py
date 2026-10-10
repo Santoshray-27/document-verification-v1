@@ -370,23 +370,33 @@ def start_issue(payload: dict, user: dict = Depends(require_role("issuer"))):
     
     job_id = f"job_{generate_uuid()}"
     
-    # Run synchronously in-process for blazing fast completion
-    result = run_in_process_issuance(user, fields, doc_type, expires_at, template_id)
-    
-    # Store in memory for SSE / polling matching Node contract
-    steps_completed = [
-        {**s, "state": "passed", "detail": "Completed"} for s in STEPS
-    ]
-    jobs_store[job_id] = {
-        "id": job_id,
-        "type": "issue",
-        "status": "done",
-        "progress": 100,
-        "steps": steps_completed,
-        "result": result,
-    }
-    
-    return {"ok": True, "job_id": job_id}
+    try:
+        # Run synchronously in-process for blazing fast completion
+        result = run_in_process_issuance(user, fields, doc_type, expires_at, template_id)
+        
+        # Store in memory for SSE / polling matching Node contract
+        steps_completed = [
+            {**s, "state": "passed", "detail": "Completed"} for s in STEPS
+        ]
+        jobs_store[job_id] = {
+            "id": job_id,
+            "type": "issue",
+            "status": "done",
+            "progress": 100,
+            "steps": steps_completed,
+            "result": result,
+        }
+        
+        return {"ok": True, "job_id": job_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "ISSUANCE_ERROR", "message": f"{type(e).__name__}: {str(e)}"}
+        )
 
 @router.get("/issuer/jobs/{job_id}")
 @router.get("/issue/jobs/{job_id}")
