@@ -25,7 +25,7 @@ export default function HeatmapViewer({ visual, snapshotUrl }) {
 
   const panels = [
     { title: 'Original (registry snapshot)', src: assetUrl(snapshotUrl) },
-    { title: 'Your upload (rendered)', src: assetUrl(visual.combined_url) },
+    { title: 'Your upload (rendered)', src: assetUrl(visual.combined_url || visual.heatmap_url) },
   ].filter((p) => p.src);
 
   return (

@@ -439,4 +439,3 @@ Use this structured breakdown to create your presentation slides or pitch video:
 - **Roadmap:** Mobile verification app (React Native), Zero-Knowledge Proofs for selective privacy disclosure, Institutional HSM integration (AWS KMS).
 - **Call to Action:** Try the live app now at `https://evidentia-web.vercel.app`.
 - **Team Credits & Open-Source Acknowledgments.**
-

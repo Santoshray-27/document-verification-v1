@@ -115,8 +115,9 @@ async def start_verification(
     # Visual diff & heatmap analysis
     diff_res = None
     visual_output = None
-    # We run visual diff if we found the registered document and snapshot exists
+    # We run visual diff if we found the registered document
     if doc:
+        snap_b64 = None
         snap_path = doc.get("snapshot_path")
         if not snap_path or not os.path.exists(snap_path):
             snap_path = os.path.join(STORAGE_DIR, "snapshots", f"{doc['doc_id']}.png")
@@ -124,6 +125,34 @@ async def start_verification(
             try:
                 with open(snap_path, "rb") as sf:
                     snap_b64 = base64.b64encode(sf.read()).decode("ascii")
+            except Exception:
+                snap_b64 = None
+
+        # Fallback: dynamically regenerate snapshot from registered template if file is not present on disk
+        if not snap_b64 and registry_fields:
+            try:
+                from services import template_service, pdf_service
+                pdf_gen = template_service.render_certificate_pdf(
+                    fields=registry_fields,
+                    doc_id=doc.get("doc_id") or "",
+                    qr_text=f"https://evidentia.vercel.app/verify/{doc.get('doc_id')}",
+                    issuer_name=issuer.get("name") if issuer else "PIEMR",
+                    issued_at=str(doc.get("issued_at") or "19700101T000000Z"),
+                    doc_type=doc.get("doc_type") or "academic_certificate",
+                )
+                first_png = pdf_service.first_page_png(pdf_gen)
+                if first_png:
+                    snap_b64 = base64.b64encode(first_png).decode("ascii")
+                    # Save snapshot to disk
+                    snap_dir = os.path.join(STORAGE_DIR, "snapshots")
+                    os.makedirs(snap_dir, exist_ok=True)
+                    with open(os.path.join(snap_dir, f"{doc['doc_id']}.png"), "wb") as pf:
+                        pf.write(first_png)
+            except Exception:
+                pass
+
+        if snap_b64:
+            try:
                 d = diff_service.diff(snap_b64, contents)
                 if d and d.get("ok"):
                     diff_res = d

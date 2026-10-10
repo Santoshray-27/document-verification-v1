@@ -142,28 +142,84 @@ async function runVerify(jobId, { buffer, originalName, manualDocId, verifier })
     };
   }
 
-  if (needForensics && workerAvailable && record.snapshot_path && fs.existsSync(record.snapshot_path)) {
-    jobs.start(jobId, 'visual_diff', 'Aligning pages and computing SSIM');
-    try {
-      const snapB64 = fs.readFileSync(record.snapshot_path).toString('base64');
-      const d = await worker.diffCheck(buffer, originalName || `upload.${kind.ext}`, snapB64);
-      if (d && d.ok) {
-        diff = d;
-        if (d.heatmap_png_base64) {
-          const heatPath = path.join(config.storageDir, 'heatmaps', `${fileHash.slice(0, 24)}.png`);
-          fs.writeFileSync(heatPath, Buffer.from(d.heatmap_png_base64, 'base64'));
-          diff.heatmap_url = `/static/heatmaps/${path.basename(heatPath)}`;
-        }
-        if (d.combined_png_base64) {
-          const combPath = path.join(config.storageDir, 'heatmaps', `${fileHash.slice(0, 24)}_combined.png`);
-          fs.writeFileSync(combPath, Buffer.from(d.combined_png_base64, 'base64'));
-          diff.combined_url = `/static/heatmaps/${path.basename(combPath)}`;
-        }
-      } else {
-        jobs.finish(jobId, 'visual_diff', 'warning', d?.error || 'Visual comparison unavailable');
+  if (needForensics && workerAvailable) {
+    let snapB64 = null;
+    let resolvedSnapPath = null;
+
+    // Check primary record snapshot_path
+    if (record.snapshot_path && fs.existsSync(record.snapshot_path)) {
+      resolvedSnapPath = record.snapshot_path;
+    } else {
+      // Check relative storageDir fallback
+      const fallbackSnapPath = path.join(config.storageDir, 'snapshots', `${record.doc_id}.png`);
+      if (fs.existsSync(fallbackSnapPath)) {
+        resolvedSnapPath = fallbackSnapPath;
       }
-    } catch (e) {
-      jobs.finish(jobId, 'visual_diff', 'warning', `Visual comparison failed: ${e.message}`);
+    }
+
+    if (resolvedSnapPath) {
+      try {
+        snapB64 = fs.readFileSync(resolvedSnapPath).toString('base64');
+      } catch (err) {
+        snapB64 = null;
+      }
+    }
+
+    // If snapshot file doesn't exist on disk (common in ephemeral/cloud environments),
+    // dynamically regenerate the original certificate snapshot from registered fields and issuer
+    if (!snapB64 && record.fields_json) {
+      try {
+        const regFields = JSON.parse(record.fields_json);
+        const issuedTime = record.issued_at || new Date().toISOString();
+        const genRes = await worker.renderCertificate({
+          fields: regFields,
+          doc_id: record.doc_id,
+          qr_text: `https://evidentia.vercel.app/verify/${record.doc_id}`,
+          issuer_name: issuer?.name || 'PIEMR',
+          issued_at: issuedTime,
+          doc_type: record.doc_type || 'academic_certificate',
+        });
+        if (genRes && genRes.snapshot_png_base64) {
+          snapB64 = genRes.snapshot_png_base64;
+          // Cache it for subsequent requests
+          const snapSavePath = path.join(config.storageDir, 'snapshots', `${record.doc_id}.png`);
+          fs.mkdirSync(path.dirname(snapSavePath), { recursive: true });
+          fs.writeFileSync(snapSavePath, Buffer.from(snapB64, 'base64'));
+          try {
+            db.prepare('UPDATE documents SET snapshot_path = ? WHERE doc_id = ?').run(snapSavePath, record.doc_id);
+          } catch {}
+        }
+      } catch (genErr) {
+        // Regeneration fallback failed
+      }
+    }
+
+    if (snapB64) {
+      jobs.start(jobId, 'visual_diff', 'Aligning pages and computing SSIM');
+      try {
+        const d = await worker.diffCheck(buffer, originalName || `upload.${kind.ext}`, snapB64);
+        if (d && d.ok) {
+          diff = d;
+          if (d.heatmap_png_base64) {
+            const heatmapsDir = path.join(config.storageDir, 'heatmaps');
+            fs.mkdirSync(heatmapsDir, { recursive: true });
+            const heatPath = path.join(heatmapsDir, `${fileHash.slice(0, 24)}.png`);
+            fs.writeFileSync(heatPath, Buffer.from(d.heatmap_png_base64, 'base64'));
+            diff.heatmap_url = `/static/heatmaps/${path.basename(heatPath)}`;
+          }
+          if (d.combined_png_base64) {
+            const heatmapsDir = path.join(config.storageDir, 'heatmaps');
+            fs.mkdirSync(heatmapsDir, { recursive: true });
+            const combPath = path.join(heatmapsDir, `${fileHash.slice(0, 24)}_combined.png`);
+            fs.writeFileSync(combPath, Buffer.from(d.combined_png_base64, 'base64'));
+            diff.combined_url = `/static/heatmaps/${path.basename(combPath)}`;
+          }
+        } else {
+          jobs.finish(jobId, 'visual_diff', 'warning', d?.error || 'Visual comparison unavailable');
+        }
+      } catch (e) {
+        jobs.finish(jobId, 'visual_diff', 'warning', `Visual comparison failed: ${e.message}`);
+      }
     }
   }
 
