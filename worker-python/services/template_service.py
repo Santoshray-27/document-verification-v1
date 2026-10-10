@@ -362,76 +362,132 @@ def render_certificate_pdf(
     # =========================================================================
     elif doc_type in ("hackathon_participation", "tpl_hack_part", "tpl_hack_part_01") and not bg_reader:
         CYAN = HexColor("#06B6D4")
+        CYAN_LIGHT = HexColor("#67E8F9")
         DARK_BG = HexColor("#0B0F19")
+        SLATE_400 = HexColor("#94A3B8")
+        SLATE_300 = HexColor("#CBD5E1")
+        PURPLE_ACCENT = HexColor("#8B5CF6")
+
+        # Dark background
         c.setFillColor(DARK_BG)
         c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
 
+        # Subtle Neon Corner Glow Accents
+        c.saveState()
+        # Top-right Purple Glow
+        c.setFillColor(HexColor("#1E1B4B"))
+        p = c.beginPath()
+        p.moveTo(PAGE_W - 140, PAGE_H)
+        p.curveTo(PAGE_W - 90, PAGE_H - 50, PAGE_W - 40, PAGE_H - 120, PAGE_W, PAGE_H - 140)
+        p.lineTo(PAGE_W, PAGE_H)
+        p.close()
+        c.drawPath(p, fill=1, stroke=0)
+
+        # Bottom-left Cyan Glow
+        c.setFillColor(HexColor("#083344"))
+        p2 = c.beginPath()
+        p2.moveTo(0, 0)
+        p2.lineTo(0, 130)
+        p2.curveTo(40, 100, 90, 50, 140, 0)
+        p2.close()
+        c.drawPath(p2, fill=1, stroke=0)
+        c.restoreState()
+
         # Border
         c.setStrokeColor(HexColor("#0891B2"))
-        c.setLineWidth(2)
+        c.setLineWidth(2.5)
         c.rect(14, 14, PAGE_W - 28, PAGE_H - 28, stroke=1, fill=0)
 
-        # Header
-        c.setStrokeColor(HexColor("#1E293B"))
-        c.line(36, PAGE_H - 65, PAGE_W - 36, PAGE_H - 65)
+        # Header - Brand Hero & Badge
+        mono_x = 42
+        mono_y = PAGE_H - 62
+        c.setFillColor(HexColor("#162032"))
+        c.setStrokeColor(HexColor("#334155"))
+        c.setLineWidth(1)
+        c.circle(mono_x + 18, mono_y + 8, 18, stroke=1, fill=1)
         c.setFillColor(white)
-        c.setFont("Helvetica-Bold", 18)
-        c.drawString(36, PAGE_H - 52, issuer)
+        c.setFont("Helvetica-Bold", 12)
+        c.drawCentredString(mono_x + 18, mono_y + 4, monogram)
 
-        # Participant Badge Box
+        # Issuer Name
+        c.setFillColor(white)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(mono_x + 44, mono_y + 11, issuer)
+        c.setFillColor(SLATE_400)
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(mono_x + 44, mono_y - 2, "ACCREDITED ISSUING AUTHORITY")
+
+        # Participant Badge Box (top right)
+        mode = fields.get("mode") or "36-Hour Onsite Sprint"
         c.setFillColor(HexColor("#0E2A38"))
         c.setStrokeColor(CYAN)
         c.setLineWidth(1)
-        c.rect(PAGE_W - 180, PAGE_H - 55, 144, 24, stroke=1, fill=1)
+        c.roundRect(PAGE_W - 190, PAGE_H - 58, 148, 24, 3, stroke=1, fill=1)
         c.setFillColor(CYAN)
-        c.setFont("Helvetica-Bold", 8.5)
-        c.drawCentredString(PAGE_W - 108, PAGE_H - 43, "PARTICIPANT BADGE")
+        c.setFont("Courier-Bold", 8)
+        c.drawCentredString(PAGE_W - 116, PAGE_H - 46, "PARTICIPANT BADGE")
+        c.setFillColor(SLATE_400)
+        c.setFont("Courier", 7)
+        c.drawRightString(PAGE_W - 42, PAGE_H - 72, mode)
+
+        # Header divider
+        c.setStrokeColor(HexColor("#1E293B"))
+        c.setLineWidth(1)
+        c.line(42, PAGE_H - 85, PAGE_W - 42, PAGE_H - 85)
 
         # Subtitle
         c.setFillColor(CYAN)
-        c.setFont("Helvetica-Bold", 8.5)
-        c.drawString(36, PAGE_H - 100, "CERTIFICATE OF CONTENDER PARTICIPATION")
+        c.setFont("Courier-Bold", 8.5)
+        c.drawString(42, PAGE_H - 112, "CERTIFICATE OF CONTENDER PARTICIPATION")
 
-        # Recipient
+        # Recipient Name (cyan-tinted white)
         c.setFillColor(white)
-        c.setFont("Helvetica-Bold", 30)
-        c.drawString(36, PAGE_H - 142, recipient)
+        c.setFont("Helvetica-Bold", 32)
+        c.drawString(42, PAGE_H - 154, recipient)
 
-        # Squad
+        # Squad pill
         team = fields.get("team_name") or "ByteForge Syndicate"
-        c.setFillColor(HexColor("#94A3B8"))
-        c.setFont("Helvetica-Bold", 9.5)
-        c.drawString(36, PAGE_H - 172, f"SQUAD: {team}")
+        c.setFillColor(SLATE_400)
+        c.setFont("Courier-Bold", 8)
+        c.drawString(42, PAGE_H - 180, "SQUAD: ")
+        c.setFillColor(HexColor("#1E293B"))
+        c.setStrokeColor(HexColor("#334155"))
+        team_w = c.stringWidth(team, "Courier-Bold", 8.5) + 16
+        c.roundRect(86, PAGE_H - 188, team_w, 18, 3, stroke=1, fill=1)
+        c.setFillColor(white)
+        c.setFont("Courier-Bold", 8.5)
+        c.drawString(94, PAGE_H - 180, team)
 
         # Narrative
         hack = fields.get("hackathon_name") or "ETHGlobal Nexus 2026"
         track = fields.get("theme_track") or "Autonomous Agentic Systems & Cryptographic Proofs"
         dates = fields.get("event_dates") or "October 8–10, 2026"
 
-        c.setFillColor(HexColor("#CBD5E1"))
+        c.setFillColor(SLATE_300)
         c.setFont("Helvetica", 11)
-        c.drawString(36, PAGE_H - 210, f"successfully hacked, built, and shipped functional code at {hack}")
-        c.drawString(36, PAGE_H - 228, f"under the track: {track}.")
+        c.drawString(42, PAGE_H - 216, f"successfully hacked, built, and shipped functional code at {hack}")
+        c.drawString(42, PAGE_H - 234, f"under the track: {track}.")
 
-        c.setFillColor(HexColor("#94A3B8"))
-        c.setFont("Helvetica", 9.5)
-        c.drawString(36, PAGE_H - 260, f"Dates: {dates}")
+        c.setFillColor(SLATE_400)
+        c.setFont("Courier", 9)
+        c.drawString(42, PAGE_H - 264, f"Dates: {dates}")
 
         # Organizer Sign
         organizer = fields.get("lead_organizer") or "Siddharth Sengupta (Lead Hackathon Director)"
         c.setStrokeColor(HexColor("#1E293B"))
-        c.line(36, 120, PAGE_W - 36, 120)
+        c.setLineWidth(1)
+        c.line(42, 114, PAGE_W - 42, 114)
 
-        c.setFillColor(HexColor("#94A3B8"))
-        c.setFont("Helvetica", 8)
-        c.drawString(36, 102, "AUTHORIZED ORGANIZER")
+        c.setFillColor(SLATE_400)
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(42, 98, "AUTHORIZED ORGANIZER")
         c.setFillColor(white)
         c.setFont("Helvetica-Bold", 9.5)
-        c.drawString(36, 88, organizer)
+        c.drawString(42, 84, organizer)
 
-        c.setFillColor(HexColor("#A855F7"))
-        c.setFont("Helvetica-Bold", 9.5)
-        c.drawRightString(PAGE_W - 36, 92, "VERIFIED HACKATHON HASH")
+        c.setFillColor(PURPLE_ACCENT)
+        c.setFont("Courier-Bold", 9)
+        c.drawRightString(PAGE_W - 42, 92, "VERIFIED HACKATHON HASH")
 
         _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=True)
 
@@ -440,73 +496,125 @@ def render_certificate_pdf(
     # =========================================================================
     elif doc_type in ("hackathon_winner", "tpl_hack_win", "tpl_hack_win_01") and not bg_reader:
         GOLD_ACCENT = HexColor("#F59E0B")
+        GOLD_LIGHT = HexColor("#FDE68A")
         DARK_BG = HexColor("#090D16")
+        SLATE_400 = HexColor("#94A3B8")
+        SLATE_300 = HexColor("#CBD5E1")
+
         c.setFillColor(DARK_BG)
         c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+
+        # Subtle gold ambient glow in top-right
+        c.saveState()
+        c.setFillColor(HexColor("#261A05"))
+        p = c.beginPath()
+        p.moveTo(PAGE_W - 160, PAGE_H)
+        p.curveTo(PAGE_W - 100, PAGE_H - 40, PAGE_W - 40, PAGE_H - 120, PAGE_W, PAGE_H - 160)
+        p.lineTo(PAGE_W, PAGE_H)
+        p.close()
+        c.drawPath(p, fill=1, stroke=0)
+        c.restoreState()
 
         # Border
         c.setStrokeColor(GOLD_ACCENT)
         c.setLineWidth(3)
         c.rect(14, 14, PAGE_W - 28, PAGE_H - 28, stroke=1, fill=0)
 
-        # Header
-        c.setStrokeColor(HexColor("#332408"))
-        c.line(36, PAGE_H - 65, PAGE_W - 36, PAGE_H - 65)
-        c.setFillColor(HexColor("#FDF6B2"))
-        c.setFont("Helvetica-Bold", 18)
-        c.drawString(36, PAGE_H - 52, issuer)
+        # Header - Brand Hero & Trophy Rank Badge
+        mono_x = 42
+        mono_y = PAGE_H - 62
+        c.setFillColor(HexColor("#231805"))
+        c.setStrokeColor(GOLD_ACCENT)
+        c.setLineWidth(1)
+        c.circle(mono_x + 18, mono_y + 8, 18, stroke=1, fill=1)
+        c.setFillColor(GOLD_ACCENT)
+        c.setFont("Helvetica-Bold", 12)
+        c.drawCentredString(mono_x + 18, mono_y + 4, monogram)
 
-        # Rank badge
+        # Issuer Name
+        c.setFillColor(white)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(mono_x + 44, mono_y + 11, issuer)
+        c.setFillColor(SLATE_400)
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(mono_x + 44, mono_y - 2, "ACCREDITED ISSUING AUTHORITY")
+
+        # Rank Trophy Badge (top right)
         rank = fields.get("rank_position") or "1ST PLACE GRAND CHAMPION"
         c.setFillColor(HexColor("#332408"))
         c.setStrokeColor(GOLD_ACCENT)
-        c.roundRect(PAGE_W - 230, PAGE_H - 56, 194, 26, 4, stroke=1, fill=1)
+        c.roundRect(PAGE_W - 240, PAGE_H - 58, 198, 26, 4, stroke=1, fill=1)
         c.setFillColor(GOLD_ACCENT)
-        c.setFont("Helvetica-Bold", 8.5)
-        c.drawCentredString(PAGE_W - 133, PAGE_H - 43, f"★ {rank}")
+        c.setFont("Courier-Bold", 8.5)
+        c.drawCentredString(PAGE_W - 141, PAGE_H - 44, f"★  {rank}")
+
+        # Header line
+        c.setStrokeColor(HexColor("#332408"))
+        c.setLineWidth(1)
+        c.line(42, PAGE_H - 85, PAGE_W - 42, PAGE_H - 85)
 
         # Main commendation
         c.setFillColor(GOLD_ACCENT)
-        c.setFont("Helvetica-Bold", 9)
+        c.setFont("Courier-Bold", 9)
         c.drawCentredString(PAGE_W / 2, PAGE_H - 110, "PRESTIGIOUS MERIT AWARD")
 
         c.setFillColor(white)
-        c.setFont("Times-Bold", 30)
+        c.setFont("Times-Bold", 32)
         c.drawCentredString(PAGE_W / 2, PAGE_H - 150, recipient)
 
         team = fields.get("team_name") or "Team Hyperion Alpha"
-        c.setFillColor(HexColor("#FDE68A"))
-        c.setFont("Helvetica-Bold", 9.5)
+        c.setFillColor(GOLD_LIGHT)
+        c.setFont("Courier-Bold", 9.5)
         c.drawCentredString(PAGE_W / 2, PAGE_H - 172, f"SQUAD: {team}")
+
+        # Divider line
+        c.setStrokeColor(HexColor("#B45309"))
+        c.setLineWidth(1)
+        c.line(PAGE_W / 2 - 80, PAGE_H - 184, PAGE_W / 2 + 80, PAGE_H - 184)
 
         hack = fields.get("hackathon_name") or "National Builders Conclave 2026"
         project = fields.get("project_title") or "Evidentia: Realtime Multi-Modal Verification Protocol"
         prize = fields.get("prize_amount")
 
-        c.setFillColor(HexColor("#E2E8F0"))
+        c.setFillColor(SLATE_300)
         c.setFont("Helvetica", 11)
         c.drawCentredString(PAGE_W / 2, PAGE_H - 210, f"Awarded for outstanding engineering mastery and winning submission at {hack} with the project:")
 
         c.setFillColor(HexColor("#FDE047"))
-        c.setFont("Helvetica-Bold", 13.5)
-        c.drawCentredString(PAGE_W / 2, PAGE_H - 235, f'"{project}"')
+        c.setFont("Helvetica-Bold", 14)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 234, f'"{project}"')
 
         if prize:
+            c.setFillColor(HexColor("#1A1305"))
+            c.setStrokeColor(HexColor("#D97706"))
+            c.setLineWidth(1)
+            pw = c.stringWidth(f"HONORARIUM: {prize}", "Courier-Bold", 9) + 24
+            c.roundRect(PAGE_W / 2 - pw / 2, PAGE_H - 272, pw, 20, 3, stroke=1, fill=1)
             c.setFillColor(GOLD_ACCENT)
-            c.setFont("Helvetica-Bold", 9.5)
-            c.drawCentredString(PAGE_W / 2, PAGE_H - 262, f"HONORARIUM: {prize}")
+            c.setFont("Courier-Bold", 9)
+            c.drawCentredString(PAGE_W / 2, PAGE_H - 261, f"HONORARIUM: {prize}")
 
         # Jury Remarks & Signature
+        remark = fields.get("judges_remark") or "Awarded unconditionally for breakthrough real-time forensic integrity algorithms."
         chair = fields.get("jury_chair") or "Dr. A. V. Natarajan, Head of Jury"
-        c.setStrokeColor(HexColor("#332408"))
-        c.line(36, 120, PAGE_W - 36, 120)
 
-        c.setFillColor(HexColor("#CBD5E1"))
-        c.setFont("Helvetica-Bold", 9)
-        c.drawRightString(PAGE_W - 36, 100, chair)
-        c.setFillColor(HexColor("#94A3B8"))
-        c.setFont("Helvetica", 7.5)
-        c.drawRightString(PAGE_W - 36, 88, "Head of Jury")
+        c.setStrokeColor(HexColor("#332408"))
+        c.setLineWidth(1)
+        c.line(42, 114, PAGE_W - 42, 114)
+
+        c.setFillColor(GOLD_ACCENT)
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(42, 98, "JURY COMMENDATION:")
+        c.setFillColor(SLATE_300)
+        c.setFont("Helvetica-Oblique", 8.5)
+        c.drawString(42, 84, f'"{remark}"'[:75])
+
+        c.setFillColor(white)
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawRightString(PAGE_W - 42, 98, chair)
+        c.setFillColor(SLATE_400)
+        c.setFont("Courier-Bold", 7.5)
+        c.drawRightString(PAGE_W - 42, 84, "Head of Jury")
 
         _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=True)
 
@@ -515,64 +623,170 @@ def render_certificate_pdf(
     # =========================================================================
     elif doc_type in ("workshop_completion", "tpl_workshop", "tpl_work_01") and not bg_reader:
         TEAL = HexColor("#0D9488")
-        c.setFillColor(PARCHMENT)
+        TEAL_DARK = HexColor("#134E4A")
+        ROSE_ACCENT = HexColor("#F43F5E")
+        ROSE_BG = HexColor("#FFF1F2")
+        TEAL_PASTEL = HexColor("#CCFBF1")
+        SLATE_900 = HexColor("#0F172A")
+        SLATE_600 = HexColor("#475569")
+        SLATE_500 = HexColor("#64748B")
+
+        # Background Warm Ivory/Parchment (#FDFBF7)
+        c.setFillColor(HexColor("#FDFBF7"))
         c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
 
+        # Decorative Pastel Corner Blobs
+        c.saveState()
+        # Top-right Teal blob
+        c.setFillColor(HexColor("#CCFBF1"))
+        p = c.beginPath()
+        p.moveTo(PAGE_W - 190, PAGE_H)
+        p.curveTo(PAGE_W - 190, PAGE_H - 110, PAGE_W - 110, PAGE_H - 180, PAGE_W, PAGE_H - 180)
+        p.lineTo(PAGE_W, PAGE_H)
+        p.close()
+        c.drawPath(p, fill=1, stroke=0)
+
+        # Bottom-left Rose blob
+        c.setFillColor(HexColor("#FFE4E6"))
+        p2 = c.beginPath()
+        p2.moveTo(0, 0)
+        p2.lineTo(0, 160)
+        p2.curveTo(80, 160, 160, 90, 160, 0)
+        p2.close()
+        c.drawPath(p2, fill=1, stroke=0)
+        c.restoreState()
+
+        # Outer Teal border (border-4 border-[#0D9488])
         c.setStrokeColor(TEAL)
-        c.setLineWidth(3.5)
+        c.setLineWidth(4.5)
         c.rect(14, 14, PAGE_W - 28, PAGE_H - 28, stroke=1, fill=0)
 
-        # Header
-        c.setStrokeColor(HexColor("#CCFBF1"))
-        c.line(36, PAGE_H - 65, PAGE_W - 36, PAGE_H - 65)
-        c.setFillColor(HexColor("#134E4A"))
-        c.setFont("Helvetica-Bold", 18)
-        c.drawString(36, PAGE_H - 52, issuer)
+        # Header - BrandHero & Intensive Badge
+        # Brand Monogram Circle (bg-amber-500/10 border-amber-600/30 text-amber-900)
+        mono_x = 42
+        mono_y = PAGE_H - 62
+        c.setFillColor(HexColor("#FEF3C7"))
+        c.setStrokeColor(HexColor("#D97706"))
+        c.setLineWidth(1)
+        c.circle(mono_x + 18, mono_y + 8, 18, stroke=1, fill=1)
+        c.setFillColor(HexColor("#78350F"))
+        c.setFont("Helvetica-Bold", 12)
+        c.drawCentredString(mono_x + 18, mono_y + 4, monogram)
 
-        hours = fields.get("duration_hours") or "48"
+        # Brand Org Name & City
+        c.setFillColor(SLATE_900)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(mono_x + 44, mono_y + 11, issuer)
+        c.setFillColor(SLATE_500)
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(mono_x + 44, mono_y - 2, "BENGALURU, INDIA")
+
+        # Top-right Hours Badge (w-12 h-12 rounded-full border-2 border-[#0D9488] bg-white)
+        hours = str(fields.get("duration_hours") or "48")
+        badge_x = PAGE_W - 68
+        badge_y = PAGE_H - 54
         c.setFillColor(white)
         c.setStrokeColor(TEAL)
-        c.circle(PAGE_W - 60, PAGE_H - 45, 18, stroke=1, fill=1)
+        c.setLineWidth(2)
+        c.circle(badge_x, badge_y, 22, stroke=1, fill=1)
         c.setFillColor(TEAL)
-        c.setFont("Helvetica-Bold", 9)
-        c.drawCentredString(PAGE_W - 60, PAGE_H - 48, f"{hours}h")
+        c.setFont("Helvetica-Bold", 13)
+        c.drawCentredString(badge_x, badge_y + 1, f"{hours}h")
+        c.setFont("Courier-Bold", 6.5)
+        c.drawCentredString(badge_x, badge_y - 9, "INTENSIVE")
 
-        # Body
-        c.setFillColor(HexColor("#E11D48"))
-        c.setFont("Helvetica-Bold", 8.5)
-        c.drawString(36, PAGE_H - 100, "PROFESSIONAL SKILL CERTIFICATION")
+        # Divider line
+        c.setStrokeColor(HexColor("#CCFBF1"))
+        c.setLineWidth(1.2)
+        c.line(42, PAGE_H - 90, PAGE_W - 42, PAGE_H - 90)
 
-        c.setFillColor(HexColor("#0F172A"))
-        c.setFont("Helvetica-Bold", 28)
-        c.drawString(36, PAGE_H - 138, recipient)
+        # Body - PROFESSIONAL SKILL CERTIFICATION pill
+        pill_text = "PROFESSIONAL SKILL CERTIFICATION"
+        c.setFont("Courier-Bold", 7.5)
+        pw = c.stringWidth(pill_text, "Courier-Bold", 7.5) + 16
+        c.setFillColor(ROSE_BG)
+        c.setStrokeColor(HexColor("#FECDD3"))
+        c.setLineWidth(0.8)
+        c.roundRect(42, PAGE_H - 116, pw, 17, 8.5, stroke=1, fill=1)
+        c.setFillColor(ROSE_ACCENT)
+        c.drawString(50, PAGE_H - 108, pill_text)
 
-        c.setFillColor(HexColor("#475569"))
-        c.setFont("Helvetica", 10.5)
-        c.drawString(36, PAGE_H - 165, "has successfully completed the intensive hands-on bootcamp:")
+        # Recipient Name
+        c.setFillColor(SLATE_900)
+        c.setFont("Helvetica-Bold", 32)
+        c.drawString(42, PAGE_H - 156, recipient)
 
+        # Narrative line
+        c.setFillColor(SLATE_600)
+        c.setFont("Helvetica", 11)
+        c.drawString(42, PAGE_H - 182, "has successfully completed the intensive hands-on bootcamp:")
+
+        # Workshop Title
         w_title = fields.get("workshop_title") or course or "Advanced Full-Stack Rust & High-Concurrency Systems"
         c.setFillColor(TEAL)
-        c.setFont("Helvetica-Bold", 15)
-        c.drawString(36, PAGE_H - 192, w_title)
+        c.setFont("Helvetica-Bold", 17)
+        c.drawString(42, PAGE_H - 212, w_title)
 
-        # Evaluation & Instructor
-        instructor = fields.get("lead_instructor") or "Tanmay Agarwal, Lead Instructor"
-        score = fields.get("score_achieved") or "98% Top Decile Capstone Score"
+        # Subtle underline under title
+        tw = min(c.stringWidth(w_title, "Helvetica-Bold", 17), PAGE_W - 84)
+        c.setStrokeColor(HexColor("#99F6E4"))
+        c.setLineWidth(1.8)
+        c.line(42, PAGE_H - 218, 42 + tw, PAGE_H - 218)
 
+        # Verified Core Competencies Chips
+        c.setFillColor(SLATE_500)
+        c.setFont("Courier-Bold", 8)
+        c.drawString(42, PAGE_H - 246, "VERIFIED CORE COMPETENCIES:")
+
+        skills = fields.get("skills_covered")
+        if not isinstance(skills, list) or len(skills) == 0:
+            skills = [
+                "Async Tokio Engine",
+                "Memory Safety & Lifetimes",
+                "WASM Compilation",
+                "Zero-Copy Serialization",
+                "Micro-benchmarking"
+            ]
+
+        # Draw Skill Pill Chips
+        cx = 42
+        cy = PAGE_H - 274
+        for s in skills[:6]:
+            chip_label = f"✓ {str(s).strip()}"
+            c.setFont("Courier-Bold", 8)
+            sw = c.stringWidth(chip_label, "Courier-Bold", 8) + 16
+            if cx + sw > PAGE_W - 42:
+                cx = 42
+                cy -= 22
+            c.setFillColor(white)
+            c.setStrokeColor(HexColor("#5EEAD4"))
+            c.setLineWidth(1)
+            c.roundRect(cx, cy, sw, 18, 9, stroke=1, fill=1)
+            c.setFillColor(TEAL)
+            c.drawString(cx + 8, cy + 5, chip_label)
+            cx += sw + 8
+
+        # Evaluation & Instructor section
         c.setStrokeColor(HexColor("#CCFBF1"))
-        c.line(36, 120, PAGE_W - 36, 120)
+        c.setLineWidth(1.2)
+        c.line(42, 114, PAGE_W - 42, 114)
 
-        c.setFillColor(HexColor("#64748B"))
-        c.setFont("Helvetica", 7.5)
-        c.drawString(36, 102, "ACADEMIC EVALUATION:")
-        c.setFillColor(HexColor("#0F172A"))
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(36, 88, score)
+        score = fields.get("score_achieved") or "98% Top Decile Capstone Score"
+        instructor = fields.get("lead_instructor") or "Tanmay Agarwal, Principal Architect"
 
-        c.drawRightString(PAGE_W - 36, 100, instructor)
-        c.setFillColor(HexColor("#64748B"))
-        c.setFont("Helvetica", 7.5)
-        c.drawRightString(PAGE_W - 36, 88, "Lead Instructor")
+        c.setFillColor(SLATE_500)
+        c.setFont("Courier-Bold", 8)
+        c.drawString(42, 98, "ACADEMIC EVALUATION:")
+        c.setFillColor(SLATE_900)
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawString(42, 84, score)
+
+        c.setFillColor(SLATE_900)
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawRightString(PAGE_W - 42, 98, instructor)
+        c.setFillColor(SLATE_500)
+        c.setFont("Courier-Bold", 8)
+        c.drawRightString(PAGE_W - 42, 84, "Lead Instructor")
 
         _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=False)
 
@@ -587,17 +801,27 @@ def render_certificate_pdf(
         c.setLineWidth(1.5)
         c.rect(16, 16, PAGE_W - 32, PAGE_H - 32, stroke=1, fill=0)
 
-        # Header Band
+        # Header Band with BrandHero Monogram
+        mono_x = 36
+        mono_y = PAGE_H - 62
+        c.setFillColor(HexColor("#FEF3C7"))
+        c.setStrokeColor(HexColor("#D97706"))
+        c.setLineWidth(1)
+        c.circle(mono_x + 18, mono_y + 8, 18, stroke=1, fill=1)
+        c.setFillColor(HexColor("#78350F"))
+        c.setFont("Helvetica-Bold", 12)
+        c.drawCentredString(mono_x + 18, mono_y + 4, monogram)
+
         c.setFillColor(HexColor("#0F172A"))
         c.setFont("Helvetica-Bold", 16)
-        c.drawString(36, PAGE_H - 50, issuer)
+        c.drawString(mono_x + 44, mono_y + 11, issuer)
         c.setFillColor(HexColor("#64748B"))
-        c.setFont("Helvetica", 8)
-        c.drawString(36, PAGE_H - 62, "ACCREDITED ISSUING AUTHORITY")
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(mono_x + 44, mono_y - 2, "ACCREDITED ISSUING AUTHORITY")
 
         c.setStrokeColor(HexColor("#0F172A"))
         c.setLineWidth(2)
-        c.line(36, PAGE_H - 72, PAGE_W - 36, PAGE_H - 72)
+        c.line(36, PAGE_H - 74, PAGE_W - 36, PAGE_H - 74)
 
         # Statement bar
         session = fields.get("exam_session") or "May–June 2026"
@@ -721,17 +945,27 @@ def render_certificate_pdf(
         c.setFillColor(HexColor("#0F766E"))
         c.rect(0, PAGE_H - 10, PAGE_W, 10, stroke=0, fill=1)
 
-        # Letterhead Header
+        # Letterhead Header with BrandHero Monogram
+        mono_cx = PAGE_W / 2
+        mono_cy = PAGE_H - 46
+        c.setFillColor(HexColor("#FEF3C7"))
+        c.setStrokeColor(HexColor("#D97706"))
+        c.setLineWidth(1)
+        c.circle(mono_cx, mono_cy + 12, 16, stroke=1, fill=1)
+        c.setFillColor(HexColor("#78350F"))
+        c.setFont("Helvetica-Bold", 11)
+        c.drawCentredString(mono_cx, mono_cy + 8, monogram)
+
         c.setFillColor(HexColor("#134E4A"))
-        c.setFont("Helvetica-Bold", 19)
-        c.drawCentredString(PAGE_W / 2, PAGE_H - 46, issuer)
+        c.setFont("Helvetica-Bold", 18)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 56, issuer)
         c.setFillColor(HexColor("#64748B"))
-        c.setFont("Helvetica-Bold", 8)
-        c.drawCentredString(PAGE_W / 2, PAGE_H - 60, "ACCREDITED ISSUING AUTHORITY")
+        c.setFont("Courier-Bold", 7.5)
+        c.drawCentredString(PAGE_W / 2, PAGE_H - 68, "ACCREDITED ISSUING AUTHORITY")
 
         c.setStrokeColor(HexColor("#CCFBF1"))
         c.setLineWidth(1)
-        c.line(40, PAGE_H - 74, PAGE_W - 40, PAGE_H - 74)
+        c.line(40, PAGE_H - 78, PAGE_W - 40, PAGE_H - 78)
 
         # Ref & Date
         c.setFillColor(HexColor("#64748B"))
@@ -798,31 +1032,45 @@ def render_certificate_pdf(
         c.setFillColor(white)
         c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
 
-        # Navy Left Accent Bar
+        # Navy Left Accent Bar (border-l-[12px] border-[#1E40AF])
         c.setFillColor(HexColor("#1E40AF"))
         c.rect(0, 0, 14, PAGE_H, stroke=0, fill=1)
 
-        # Header
+        # Header with BrandHero Monogram
+        mono_x = 36
+        mono_y = PAGE_H - 62
+        c.setFillColor(HexColor("#FEF3C7"))
+        c.setStrokeColor(HexColor("#D97706"))
+        c.setLineWidth(1)
+        c.circle(mono_x + 18, mono_y + 8, 18, stroke=1, fill=1)
+        c.setFillColor(HexColor("#78350F"))
+        c.setFont("Helvetica-Bold", 12)
+        c.drawCentredString(mono_x + 18, mono_y + 4, monogram)
+
         c.setFillColor(HexColor("#0F172A"))
-        c.setFont("Helvetica-Bold", 17)
-        c.drawString(36, PAGE_H - 48, issuer)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(mono_x + 44, mono_y + 11, issuer)
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(mono_x + 44, mono_y - 2, "ACCREDITED ISSUING AUTHORITY")
 
         c.setStrokeColor(HexColor("#E2E8F0"))
-        c.line(36, PAGE_H - 68, PAGE_W - 36, PAGE_H - 68)
+        c.setLineWidth(1)
+        c.line(36, PAGE_H - 74, PAGE_W - 36, PAGE_H - 74)
 
         c.setFillColor(HexColor("#64748B"))
-        c.setFont("Helvetica-Bold", 7.5)
-        c.drawString(36, PAGE_H - 84, "CORPORATE INTERNSHIP EXPERIENCE RECORD")
-        c.drawRightString(PAGE_W - 36, PAGE_H - 84, f"EMP REF: {cert_no}")
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(36, PAGE_H - 88, "CORPORATE INTERNSHIP EXPERIENCE RECORD")
+        c.drawRightString(PAGE_W - 36, PAGE_H - 88, f"EMP REF: {cert_no}")
 
         # Intern Details
         c.setFillColor(HexColor("#1E40AF"))
-        c.setFont("Helvetica-Bold", 8.5)
+        c.setFont("Courier-Bold", 8.5)
         c.drawString(36, PAGE_H - 114, "EXPERIENCE & PERFORMANCE ATTESTATION")
 
         c.setFillColor(HexColor("#0F172A"))
         c.setFont("Helvetica-Bold", 26)
-        c.drawString(36, PAGE_H - 148, recipient)
+        c.drawString(36, PAGE_H - 146, recipient)
 
         role = fields.get("role") or fields.get("role_title") or course or "Software Engineering Intern — Core Systems"
         dept = fields.get("department") or "Platform Security & Infrastructure"
@@ -831,52 +1079,86 @@ def render_certificate_pdf(
 
         c.setFillColor(HexColor("#F8FAFC"))
         c.setStrokeColor(HexColor("#E2E8F0"))
-        c.rect(36, PAGE_H - 212, PAGE_W - 72, 50, stroke=1, fill=1)
+        c.rect(36, PAGE_H - 212, PAGE_W - 72, 52, stroke=1, fill=1)
 
         c.setFillColor(HexColor("#64748B"))
-        c.setFont("Helvetica", 7.5)
-        c.drawString(46, PAGE_H - 176, f"ROLE:  {role}")
-        c.drawString(46, PAGE_H - 190, f"DEPARTMENT:  {dept}")
-        c.drawString(46, PAGE_H - 204, f"TENURE:  {s_date}  →  {e_date}")
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(46, PAGE_H - 176, "ROLE: ")
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(90, PAGE_H - 176, role[:70])
+
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(46, PAGE_H - 190, "DEPARTMENT: ")
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(130, PAGE_H - 190, dept[:60])
+
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(46, PAGE_H - 204, "TENURE: ")
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(100, PAGE_H - 204, f"{s_date}   →   {e_date}")
 
         # Deliverables
         c.setFillColor(HexColor("#0F172A"))
-        c.setFont("Helvetica-Bold", 8)
+        c.setFont("Courier-Bold", 8)
         c.drawString(36, PAGE_H - 238, "KEY ENGINEERING DELIVERABLES & IMPACT:")
 
         projects = fields.get("projects_delivered")
         if not isinstance(projects, list):
             projects = [
-                "Built deterministic ECDSA signing microservice",
-                "Implemented forensic visual diff engine",
-                "Authored SDK verification test kits"
+                "Built deterministic ECDSA signing microservice in Node.js",
+                "Implemented OpenCV SSIM diff checks with 40% memory reduction",
+                "Authored SDK test kits with 100% automated test coverage"
             ]
         py = PAGE_H - 256
-        for p in projects[:4]:
+        for p in projects[:3]:
             c.setFillColor(HexColor("#334155"))
             c.setFont("Helvetica", 9)
-            c.drawString(48, py, f"•  {p}")
+            c.drawString(48, py, f"•   {p}")
             py -= 18
 
-        # Rating
+        # Rating Block
         rating = fields.get("rating") or "5 Stars - Outstanding Performance"
         c.setFillColor(HexColor("#EFF6FF"))
         c.setStrokeColor(HexColor("#BFDBFE"))
-        c.roundRect(PAGE_W / 2 - 120, py - 24, 240, 24, 4, stroke=1, fill=1)
+        c.roundRect(PAGE_W / 2 - 140, py - 18, 280, 24, 4, stroke=1, fill=1)
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Courier-Bold", 8)
+        c.drawCentredString(PAGE_W / 2 - 40, py - 7, "SUPERVISOR APPRAISAL:")
         c.setFillColor(HexColor("#1E40AF"))
         c.setFont("Helvetica-Bold", 9)
-        c.drawCentredString(PAGE_W / 2, py - 13, f"SUPERVISOR APPRAISAL: ★ {rating}")
+        c.drawString(PAGE_W / 2 + 25, py - 7, f"★  {rating}")
 
-        # Supervisor Sign
-        sup = fields.get("supervisor_name") or "Arvind Swaminathan (VP of Engineering)"
-        c.setStrokeColor(HexColor("#CBD5E1"))
-        c.line(PAGE_W - 220, 130, PAGE_W - 36, 130)
-        c.setFillColor(HexColor("#0F172A"))
-        c.setFont("Helvetica-Bold", 9)
-        c.drawCentredString(PAGE_W - 128, 116, sup)
+        # Remark
+        remark = fields.get("conduct_remark") or "Demonstrated high technical autonomy and exceptional work ethics."
+        c.setFillColor(HexColor("#475569"))
+        c.setFont("Helvetica-Oblique", 9)
+        c.drawCentredString(PAGE_W / 2, py - 38, f'"{remark}"')
+
+        # Supervisor Sign Block
+        c.setStrokeColor(HexColor("#E2E8F0"))
+        c.setLineWidth(1)
+        c.line(36, 126, PAGE_W - 36, 126)
+
         c.setFillColor(HexColor("#64748B"))
-        c.setFont("Helvetica", 7.5)
-        c.drawCentredString(PAGE_W - 128, 104, "VP of Engineering / Supervisor")
+        c.setFont("Courier-Bold", 7.5)
+        c.drawString(36, 110, "ISSUED BY HR DIVISION")
+        c.setFillColor(HexColor("#1E293B"))
+        c.setFont("Helvetica", 8)
+        c.drawString(36, 98, "Corporate People Operations")
+
+        sup = fields.get("supervisor_name") or "Arvind Swaminathan"
+        sup_title = fields.get("supervisor_title") or "VP of Engineering"
+        c.setFillColor(HexColor("#0F172A"))
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawRightString(PAGE_W - 36, 110, sup)
+        c.setFillColor(HexColor("#64748B"))
+        c.setFont("Courier-Bold", 7.5)
+        c.drawRightString(PAGE_W - 36, 98, sup_title)
 
         _draw_security_footer(c, PAGE_W, PAGE_H, cert_no, issue_date, qr_text, dark=False)
 
