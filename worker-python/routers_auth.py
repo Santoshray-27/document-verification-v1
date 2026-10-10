@@ -112,46 +112,53 @@ def login(req: LoginRequest):
 
 @router.post("/register")
 def register(req: RegisterRequest):
-    clean_email = req.email.strip().lower()
-    existing = query_one("SELECT id FROM users WHERE lower(email) = %s", (clean_email,))
-    if existing:
-        raise HTTPException(status_code=409, detail={"code": "EMAIL_TAKEN", "message": "An account with this email already exists"})
+    try:
+        clean_email = req.email.strip().lower()
+        existing = query_one("SELECT id FROM users WHERE lower(email) = %s", (clean_email,))
+        if existing:
+            raise HTTPException(status_code=409, detail={"code": "EMAIL_TAKEN", "message": "An account with this email already exists"})
 
-    issuer_id = f"iss_{hashlib.md5(f'{clean_email}:{time.time()}'.encode()).hexdigest()[:8]}"
-    kid = f"key_{hashlib.md5(f'{issuer_id}:1'.encode()).hexdigest()[:8]}"
-    now = datetime.now(timezone.utc).isoformat()
-    hashed_pwd = hash_password(req.password)
+        issuer_id = f"iss_{hashlib.md5(f'{clean_email}:{time.time()}'.encode()).hexdigest()[:8]}"
+        kid = f"key_{hashlib.md5(f'{issuer_id}:1'.encode()).hexdigest()[:8]}"
+        now = datetime.now(timezone.utc).isoformat()
+        hashed_pwd = hash_password(req.password)
 
-    # Insert Issuer
-    execute(
-        "INSERT INTO issuers (issuer_id, name, org_type, status, created_at) VALUES (%s, %s, %s, %s, %s)",
-        (issuer_id, req.name.strip(), req.org_type.strip(), "active", now)
-    )
+        # Insert Issuer
+        execute(
+            "INSERT INTO issuers (issuer_id, name, org_type, status, created_at) VALUES (%s, %s, %s, %s, %s)",
+            (issuer_id, req.name.strip(), (req.org_type or 'university').strip(), "active", now)
+        )
 
-    from crypto_service import generate_key_pair, ALGORITHM
-    key_pair = generate_key_pair(kid)
+        from crypto_service import generate_key_pair, ALGORITHM
+        key_pair = generate_key_pair(kid)
 
-    # Insert Real ECDSA P-256 Key
-    execute(
-        """INSERT INTO issuer_keys (kid, issuer_id, public_key_pem, private_key_path, algorithm, status, created_at)
-           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-        (kid, issuer_id, key_pair["public_key_pem"], f"../keys/{kid}.pem", ALGORITHM, "active", now)
-    )
+        # Insert Real ECDSA P-256 Key
+        execute(
+            """INSERT INTO issuer_keys (kid, issuer_id, public_key_pem, private_key_path, algorithm, status, created_at)
+               VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+            (kid, issuer_id, key_pair["public_key_pem"], f"../keys/{kid}.pem", ALGORITHM, "active", now)
+        )
 
-    # Insert User
-    execute(
-        "INSERT INTO users (name, email, password_hash, role, issuer_id, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
-        (req.name.strip(), clean_email, hashed_pwd, "issuer", issuer_id, now)
-    )
+        # Insert User
+        execute(
+            "INSERT INTO users (name, email, password_hash, role, issuer_id, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+            (req.name.strip(), clean_email, hashed_pwd, "issuer", issuer_id, now)
+        )
 
-    user = query_one("SELECT id, name, email, role, issuer_id FROM users WHERE lower(email) = %s", (clean_email,))
-    token = create_access_token(user)
+        user = query_one("SELECT id, name, email, role, issuer_id FROM users WHERE lower(email) = %s", (clean_email,))
+        token = create_access_token(user)
 
-    return {
-        "ok": True,
-        "token": token,
-        "user": user
-    }
+        return {
+            "ok": True,
+            "token": token,
+            "user": user
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail={"code": "SERVER_ERROR", "message": str(e)})
 
 @router.get("/me")
 def me(user: dict = Depends(get_current_user)):
