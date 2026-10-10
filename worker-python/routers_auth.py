@@ -62,33 +62,53 @@ def require_role(required_role: str):
 
 @router.post("/login")
 def login(req: LoginRequest):
-    email = req.email.strip().lower()
-    user = query_one("SELECT * FROM users WHERE lower(email) = %s", (email,))
-    if not user:
-        raise HTTPException(status_code=401, detail={"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"})
-    
-    if not verify_password(req.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail={"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"})
+    try:
+        email = req.email.strip().lower()
+        user = query_one("SELECT * FROM users WHERE lower(email) = %s", (email,))
+        if not user:
+            raise HTTPException(status_code=401, detail={"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"})
+        
+        valid = False
+        try:
+            valid = verify_password(req.password, user["password_hash"])
+        except Exception:
+            pass
 
-    token = create_access_token({
-        "id": user["id"],
-        "email": user["email"],
-        "role": user["role"],
-        "issuer_id": user["issuer_id"],
-        "name": user["name"]
-    })
+        if not valid:
+            try:
+                import bcrypt
+                valid = bcrypt.checkpw(req.password.encode("utf-8"), user["password_hash"].encode("utf-8"))
+            except Exception:
+                pass
 
-    return {
-        "ok": True,
-        "token": token,
-        "user": {
+        if not valid:
+            raise HTTPException(status_code=401, detail={"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"})
+
+        token = create_access_token({
             "id": user["id"],
-            "name": user["name"],
             "email": user["email"],
             "role": user["role"],
-            "issuer_id": user["issuer_id"]
+            "issuer_id": user["issuer_id"],
+            "name": user["name"]
+        })
+
+        return {
+            "ok": True,
+            "token": token,
+            "user": {
+                "id": user["id"],
+                "name": user["name"],
+                "email": user["email"],
+                "role": user["role"],
+                "issuer_id": user["issuer_id"]
+            }
         }
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail={"code": "SERVER_ERROR", "message": str(e)})
 
 @router.post("/register")
 def register(req: RegisterRequest):
