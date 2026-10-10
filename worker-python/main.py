@@ -58,18 +58,22 @@ except Exception:
 
 app = FastAPI(title="Evidentia Unified API", version="2.0.0")
 
-# CORS setup matching Node.js config
+# CORS setup: allows local dev origins as well as all Vercel/cloud deployed origins
+raw_allowed = os.environ.get("ALLOWED_ORIGINS", "")
+custom_origins = [o.strip() for o in raw_allowed.split(",") if o.strip()]
+
+default_origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://localhost:3000",
+    "http://localhost:4000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-        "http://localhost:3000",
-        "http://localhost:4000",
-    ],
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_origin_regex=r"^https?://.*$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
