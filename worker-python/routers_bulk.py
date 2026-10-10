@@ -286,6 +286,11 @@ def bulk_start(payload: dict, user: dict = Depends(require_role("issuer"))):
     if not issuer:
         raise HTTPException(status_code=400, detail={"code": "ISSUER_NOT_FOUND", "message": "Issuer not found"})
         
+    key = query_one(
+        "SELECT * FROM issuer_keys WHERE issuer_id = %s AND status = 'active' ORDER BY created_at DESC LIMIT 1",
+        (issuer["issuer_id"],)
+    )
+
     from crypto_service import generate_key_pair, private_key_path_for, new_id
     key_exists = False
     if key and key.get("kid"):
