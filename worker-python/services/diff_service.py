@@ -11,7 +11,25 @@ import io
 import cv2
 import numpy as np
 from PIL import Image
-from skimage.metrics import structural_similarity as ssim
+
+def compute_ssim(img1: np.ndarray, img2: np.ndarray) -> float:
+    """Compute Structural Similarity Index (SSIM) purely using OpenCV."""
+    C1 = (0.01 * 255) ** 2
+    C2 = (0.03 * 255) ** 2
+    i1 = img1.astype(np.float64)
+    i2 = img2.astype(np.float64)
+    kernel = cv2.getGaussianKernel(11, 1.5)
+    window = np.outer(kernel, kernel.transpose())
+    mu1 = cv2.filter2D(i1, -1, window)[5:-5, 5:-5]
+    mu2 = cv2.filter2D(i2, -1, window)[5:-5, 5:-5]
+    mu1_sq = mu1 ** 2
+    mu2_sq = mu2 ** 2
+    mu1_mu2 = mu1 * mu2
+    sigma1_sq = cv2.filter2D(i1 ** 2, -1, window)[5:-5, 5:-5] - mu1_sq
+    sigma2_sq = cv2.filter2D(i2 ** 2, -1, window)[5:-5, 5:-5] - mu2_sq
+    sigma12 = cv2.filter2D(i1 * i2, -1, window)[5:-5, 5:-5] - mu1_mu2
+    ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
+    return float(ssim_map.mean())
 
 WORK_W = 900  # fixed working width so scores are comparable across files
 MIN_REGION_PX = 400
@@ -88,8 +106,7 @@ def diff(snapshot_png_b64: str, uploaded_bytes: bytes) -> dict:
     g_o = cv2.GaussianBlur(g_o, (3, 3), 0)
     g_u = cv2.GaussianBlur(g_u, (3, 3), 0)
 
-    score, ssim_map = ssim(g_o, g_u, full=True)
-    score = float(score)
+    score = compute_ssim(g_o, g_u)
 
     absdiff = cv2.absdiff(g_o, g_u)
     _, thresh = cv2.threshold(absdiff, 28, 255, cv2.THRESH_BINARY)
