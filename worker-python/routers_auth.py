@@ -28,11 +28,23 @@ class RegisterRequest(BaseModel):
     password: str
     org_type: Optional[str] = "university"
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        import bcrypt
+        pw_bytes = plain_password.encode("utf-8")[:72]
+        hash_bytes = hashed_password.strip().encode("utf-8")
+        return bcrypt.checkpw(pw_bytes, hash_bytes)
+    except Exception:
+        try:
+            return pwd_context.verify(plain_password[:72], hashed_password)
+        except Exception:
+            return False
 
-def hash_password(password):
-    return pwd_context.hash(password)
+def hash_password(password: str) -> str:
+    import bcrypt
+    pw_bytes = password.encode("utf-8")[:72]
+    salt = bcrypt.gensalt(rounds=10)
+    return bcrypt.hashpw(pw_bytes, salt).decode("utf-8")
 
 def create_access_token(data: dict):
     to_encode = data.copy()
