@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./worker-python
+      dockerfile: Dockerfile
+    container_name: evidentia-backend
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres.faaohvkfusexrfeoltwy:Evidentia%4012345*@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require}
+      - JWT_SECRET=${JWT_SECRET:-agnitia-dev-secret-change-me}
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-http://localhost:5173}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    volumes:
+      - evidentia-storage:/app/backend-node/storage
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend-react
+      dockerfile: Dockerfile
+    container_name: evidentia-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  evidentia-storage:
