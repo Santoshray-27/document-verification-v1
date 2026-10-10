@@ -26,11 +26,14 @@ def safe_json(val):
 
 def suggest_mapping(headers: list[str], supported_fields: list[str]) -> dict:
     mapping = {}
-    normalized_headers = {h.lower().replace(" ", "_").replace("-", "_"): h for h in headers}
+    normalized_headers = {
+        h.lower().replace(" ", "_").replace("-", "_").replace("#", "").replace(".", "").strip("_"): h
+        for h in headers
+    }
     
     aliases = {
-        "name": ["name", "student_name", "recipient_name", "candidate_name", "full_name"],
-        "certificate_number": ["certificate_number", "cert_number", "certificate_id", "cert_id", "roll_no", "enrollment_number", "serial_no"],
+        "name": ["name", "recipient", "student_name", "recipient_name", "candidate_name", "full_name"],
+        "certificate_number": ["cert", "cert_number", "certificate_number", "certificate_id", "cert_id", "roll_no", "enrollment_number", "serial_no"],
         "course": ["course", "degree", "program", "programme", "branch", "department", "event", "competition"],
         "grade": ["grade", "division", "class", "cgpa", "score", "marks", "rank", "position"],
         "issue_date": ["issue_date", "date_of_issue", "date", "dated", "issued_on"],
@@ -359,3 +362,85 @@ def get_bulk_job(batch_id: str, user: dict = Depends(require_role("issuer"))):
         },
         "rows": formatted_rows
     }
+
+@router.get("/issue/bulk/jobs/{batch_id}/download")
+@router.get("/issuer/bulk/jobs/{batch_id}/download")
+def download_bulk_zip(batch_id: str, user: dict = Depends(require_role("issuer"))):
+    batch = query_one("SELECT * FROM batch_jobs WHERE id = %s AND issuer_id = %s", (batch_id, user["issuer_id"]))
+    if not batch:
+        raise HTTPException(status_code=404, detail={"code": "BATCH_NOT_FOUND", "message": "Batch not found"})
+
+    rows = query_all(
+        """
+        SELECT r.row_number, r.doc_id, r.mapped_data_json, d.pdf_path
+        FROM batch_rows r
+        JOIN documents d ON r.doc_id = d.doc_id
+        WHERE r.batch_id = %s AND r.status = 'succeeded'
+        ORDER BY r.row_number ASC
+        """,
+        (batch_id,)
+    ) or []
+
+    if not rows:
+        raise HTTPException(status_code=404, detail={"code": "NO_DOCUMENTS", "message": "No successfully issued documents found in this batch"})
+
+    import os
+    from main import STORAGE_DIR
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for r in rows:
+            doc_id = r["doc_id"]
+            pdf_path = r.get("pdf_path") or os.path.join(STORAGE_DIR, "issued", f"{doc_id}.pdf")
+            if os.path.exists(pdf_path):
+                mapped = safe_json(r.get("mapped_data_json"))
+                safe_name = "".join(c for c in (mapped.get("name") or "certificate") if c.isalnum() or c in ("_", "-")).strip() or "certificate"
+                filename = f"{str(r['row_number']).zfill(3)}_{safe_name}_{doc_id[:8]}.pdf"
+                with open(pdf_path, "rb") as f:
+                    zip_file.writestr(filename, f.read())
+
+    zip_bytes = zip_buffer.getvalue()
+    if len(zip_bytes) <= 22:  # Empty zip header size is 22 bytes
+        raise HTTPException(status_code=404, detail={"code": "FILES_NOT_FOUND", "message": "Certificate PDF files could not be located on disk"})
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="evidentia_batch_{batch_id[:8]}.zip"'}
+    )
+
+@router.get("/issue/bulk/jobs/{batch_id}/report")
+@router.get("/issuer/bulk/jobs/{batch_id}/report")
+def download_bulk_report(batch_id: str, user: dict = Depends(require_role("issuer"))):
+    batch = query_one("SELECT * FROM batch_jobs WHERE id = %s AND issuer_id = %s", (batch_id, user["issuer_id"]))
+    if not batch:
+        raise HTTPException(status_code=404, detail={"code": "BATCH_NOT_FOUND", "message": "Batch not found"})
+
+    rows = query_all("SELECT * FROM batch_rows WHERE batch_id = %s ORDER BY row_number ASC", (batch_id,)) or []
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Row Number", "Status", "Document ID", "Recipient Name", "Certificate Number", "Course", "Grade", "Issue Date", "Errors"])
+
+    for r in rows:
+        mapped = safe_json(r.get("mapped_data_json"))
+        errors = safe_json(r.get("validation_errors_json"))
+        err_msg = r.get("error_message") or ("; ".join(errors) if isinstance(errors, list) else str(errors)) or ""
+        writer.writerow([
+            r.get("row_number", ""),
+            r.get("status", ""),
+            r.get("doc_id", ""),
+            mapped.get("name") or mapped.get("recipient_name") or "",
+            mapped.get("certificate_number") or "",
+            mapped.get("course") or mapped.get("degree") or "",
+            mapped.get("grade") or "",
+            mapped.get("issue_date") or "",
+            err_msg
+        ])
+
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="evidentia_report_{batch_id[:8]}.csv"'}
+    )
+
