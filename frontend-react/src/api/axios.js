@@ -29,9 +29,23 @@ api.interceptors.response.use(
   },
   (error) => {
     const status = error.response?.status;
-    const code = error.response?.data?.error?.code || 'UNKNOWN_ERROR';
-    const message = error.response?.data?.error?.message || error.message;
-    const fieldErrors = error.response?.data?.error?.fieldErrors || {};
+    const resData = error.response?.data;
+    const detailObj = resData?.detail;
+    const errObj = resData?.error;
+
+    // Handle both FastAPI ({ detail: { code, message } }) and Node ({ error: { code, message } })
+    const code = (typeof detailObj === 'object' && detailObj?.code) 
+      || errObj?.code 
+      || (typeof detailObj === 'string' ? detailObj : '')
+      || (status === 401 ? 'INVALID_CREDENTIALS' : 'UNKNOWN_ERROR');
+
+    const message = (typeof detailObj === 'object' && detailObj?.message)
+      || errObj?.message
+      || (typeof detailObj === 'string' ? detailObj : null)
+      || (status === 401 ? 'Invalid email or password.' : null)
+      || error.message;
+
+    const fieldErrors = errObj?.fieldErrors || detailObj?.fieldErrors || {};
     
     const normalizedError = {
       status,
