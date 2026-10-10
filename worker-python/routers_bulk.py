@@ -286,12 +286,22 @@ def bulk_start(payload: dict, user: dict = Depends(require_role("issuer"))):
     if not issuer:
         raise HTTPException(status_code=400, detail={"code": "ISSUER_NOT_FOUND", "message": "Issuer not found"})
         
-    key = query_one(
-        "SELECT * FROM issuer_keys WHERE issuer_id = %s AND status = 'active' ORDER BY created_at DESC LIMIT 1",
-        (issuer["issuer_id"],)
-    )
-    if not key:
-        raise HTTPException(status_code=400, detail={"code": "KEY_NOT_FOUND", "message": "Issuer has no active signing key"})
+    from crypto_service import generate_key_pair, private_key_path_for, new_id
+    key_exists = False
+    if key and key.get("kid"):
+        key_exists = os.path.exists(private_key_path_for(key["kid"]))
+    
+    if not key or not key_exists:
+        kid = new_id("key")
+        pair = generate_key_pair(kid)
+        now_iso = datetime.now(timezone.utc).isoformat()
+        execute(
+            """
+            INSERT INTO issuer_keys (kid, issuer_id, public_key_pem, private_key_path, algorithm, status, created_at)
+            VALUES (%s, %s, %s, %s, 'ECDSA-P256-SHA256', 'active', %s)
+            """,
+            (kid, issuer["issuer_id"], pair["public_key_pem"], pair["private_path"], now_iso)
+        )
 
     # Process all valid rows in-process
     valid_rows = query_all("SELECT * FROM batch_rows WHERE batch_id = %s AND validation_status = 'valid'", (batch_id,)) or []
@@ -299,9 +309,12 @@ def bulk_start(payload: dict, user: dict = Depends(require_role("issuer"))):
     succeeded = 0
     failed = 0
     issued_doc_ids = []
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     for r in valid_rows:
         mapped = json.loads(r["mapped_data_json"])
+        if not mapped.get("issue_date"):
+            mapped["issue_date"] = today_str
         try:
             res = run_in_process_issuance(user, mapped, doc_type="academic_certificate", template_id=batch["template_id"])
             doc_id = res["doc_id"]

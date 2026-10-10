@@ -163,7 +163,7 @@ export default function BulkIssuance() {
         setPollActive(true);
       }
     } catch (e) {
-      alert(e.response?.data?.error?.message || 'Failed to start batch issuance');
+      alert(errMsg(e, 'Failed to start batch issuance'));
     } finally {
       setStarting(false);
     }
