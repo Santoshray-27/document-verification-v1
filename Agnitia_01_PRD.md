@@ -196,15 +196,130 @@ Evidentia has been verified across a 40-document test suite:
 
 ---
 
-## 9. Deliverables & Repository Map
+## 10. Complete Library & Package Catalog (Exhaustive)
 
-| Deliverable | Location in Repository | Status |
+### 10.1 Python Backend Dependencies (`worker-python/requirements.txt`)
+| Library | Exact Version | Purpose & Functionality |
 | :--- | :--- | :--- |
-| **Live Web App** | `https://evidentia-web.vercel.app` | **LIVE (Vercel)** |
-| **Live API Service** | `https://evidentia-api-ig4f.onrender.com` | **LIVE (Render)** |
-| **Master PRD** | `docs/Agnitia_01_PRD.md` | **UPDATED (v4.0)** |
-| **Master Architecture Docs**| `docs/MASTER_SYSTEM_DOCUMENTATION.md` | **COMPLETE** |
-| **Security Audit** | `docs/EVIDENTIA_SECURITY_AUDIT.md` | **COMPLETE** |
-| **Test Evaluation** | `docs/FINAL_BULK_TEMPLATE_TEST_REPORT.md` | **COMPLETE** |
-| **Frontend Source** | `frontend-react/` | **COMPLETE** |
-| **FastAPI Backend** | `worker-python/` | **COMPLETE** |
+| **`fastapi`** | `0.115.6` | Modern asynchronous web framework for REST API endpoints and automatic interactive Swagger documentation. |
+| **`uvicorn[standard]`** | `0.34.0` | Production ASGI web server with `uvloop` event loop and `httptools` protocol parsers for high concurrency. |
+| **`python-multipart`** | `0.0.20` | Streaming parser for multipart form-data (file uploads of PDFs, images, Excel sheets). |
+| **`reportlab`** | `4.2.5` | Programmatic vector PDF creation engine with custom Flowables, CIDFonts, vector lines, and high-precision A4 layouts. |
+| **`pymupdf` (`fitz`)** | `1.25.1` | C-backed high-speed PDF rendering to 300 DPI raster images, text extraction, font cataloging, and metadata parsing. |
+| **`pytesseract`** | `0.3.13` | Optical Character Recognition (OCR) bridge to extract text and bounding boxes from uploaded scans. |
+| **`opencv-python-headless`**| `4.10.0.84` | Computer vision library for Structural Similarity Index Measure (SSIM), Gaussian smoothing, contour masking, and heatmap generation without X11 GUI dependencies. |
+| **`numpy`** | `2.2.1` | High-speed N-dimensional numerical array calculations for pixel manipulation and SSIM difference arrays. |
+| **`Pillow`** | `11.0.0` | Python Imaging Library (PIL) for image resizing, format conversions, alpha compositing, and palette rendering. |
+| **`qrcode`** | `8.0` | High-entropy QR code matrix generation with high error-correction (Level H) for physical scan resilience. |
+| **`psycopg2-binary`** | `2.9.9+` | PostgreSQL database adapter utilizing C-level connection pooling (`ThreadedConnectionPool`) with Supabase. |
+| **`cryptography`** | `42.0.0+` | Cryptographic primitives implementing real ECDSA P-256 (`SECP256R1`) asymmetric signing and SHA-256 digests. |
+| **`pyjwt`** | `2.8.0+` | JSON Web Token creation and verification (`HS256`) for role-based sessions. |
+| **`passlib[bcrypt]`** | `1.7.4+` | Secure password hashing framework with Bcrypt algorithm. |
+| **`openpyxl`** | `3.1.2` | Excel file reader/writer for parsing bulk candidate certificates and template validation. |
+| **`requests`** | `2.31.0` | HTTP client for inter-service communication and webhook notifications. |
+| **`pydantic`** | `2.7.0+` | Strict data validation and schema enforcement for API request payloads and manifest serialization. |
+
+### 10.2 Frontend Dependencies (`frontend-react/package.json`)
+| Package | Version | Purpose & Functionality |
+| :--- | :--- | :--- |
+| **`react`** | `18.3.1` | Core UI library for component-based architecture and concurrent rendering. |
+| **`react-dom`** | `18.3.1` | DOM renderer for React. |
+| **`vite`** | `5.4.11` | Next-generation frontend tooling with instant HMR and Rollup-based production bundling. |
+| **`react-router-dom`** | `6.28.1` | Declarative client-side routing, nested layouts, and route guards. |
+| **`tailwindcss`** | `3.4.17` | Utility-first CSS framework configuring the custom Neo-Brutalist technical design system. |
+| **`framer-motion`** | `11.15.0` | Production-ready motion engine for scanning lasers, certificate stamp animations, and page transitions. |
+| **`lucide-react`** | `0.469.0` | Crisp, consistent SVG icons for security levels, verification shields, document actions, and telemetry. |
+| **`axios`** | `1.7.9` | Promise-based HTTP client with global interceptors for automatic Bearer token injection and error normalization. |
+| **`@tanstack/react-query`** | `5.104.1` | Powerful asynchronous state management, query caching, and background refetching. |
+| **`@radix-ui/react-*`** | `1.2 - 2.1` | Accessible unstyled UI primitives (Accordion, Dialog, Dropdown Menu, Switch, Tabs, Tooltip). |
+| **`@studio-freight/lenis`** | `1.0.42` | Smooth inertial scrolling for the technical landing page and showcase walkthrough. |
+| **`gsap`** | `3.15.0` | High-performance timeline animations for hero document verification visualizers. |
+| **`jsqr`** | `1.4.0` | In-browser pure JavaScript QR code decoder from live webcam video streams. |
+| **`clsx` & `tailwind-merge`** | `2.1.1 / 3.7` | Utility for conditionally constructing className strings and resolving Tailwind class conflicts. |
+| **`class-variance-authority`**| `0.7.1` | Type-safe component variant management for design system buttons, badges, and cards. |
+| **`autoprefixer` & `postcss`**| `10.4 / 8.4` | CSS post-processing and cross-browser vendor prefixing. |
+
+---
+
+## 11. Hackathon / Presentation Pitch Deck Structure (Slide-by-Slide)
+
+Use this structured breakdown to create your presentation slides or pitch video:
+
+### Slide 1: Title & Hook
+- **Heading:** EVIDENTIA — Proof in Every Pixel
+- **Subheading:** Multi-Layer Forensic Document Verification & Cryptographic Provenance Platform
+- **Problem Hook:** *"Anyone can forge a marksheet or diploma in Photoshop in 30 seconds. Traditional QR verification is fundamentally broken. Evidentia makes document tampering mathematically impossible."*
+- **Live URLs:** `https://evidentia-web.vercel.app` &middot; `https://evidentia-api-ig4f.onrender.com`
+
+### Slide 2: The Core Problem & Market Failure
+- **The Photoshop Epidemic:** Over $2.1B lost annually to fake diplomas, tampered transcripts, and forged work experience letters.
+- **Why Existing Solutions Fail:**
+  1. *Superficial QR Codes:* Simply link to a web page; forgers just copy the QR onto a forged certificate or clone the domain.
+  2. *Naive Hash Checks:* Flag harmless mobile screenshots as "fake" due to compression.
+  3. *Binary "Valid/Invalid" Answers:* Never tell the employer *what* changed or *where* the altered pixel occurred.
+
+### Slide 3: The Evidentia Solution — Zero-Trust Security
+- **Dual Anchor Model:**
+  1. **Canonical ECDSA P-256 Signatures:** Field-level RFC 8785 canonical hashing tied to an accredited Institutional Key Registry.
+  2. **Multi-Layer Forensic Vision Engine:** 4-tier inspection evaluating pixels, structural diffs, OCR text, and digital file metadata.
+- **Rule of Determinism:** *Cryptography and computer vision decide the verdict. AI never decides legal authenticity.*
+
+### Slide 4: 4-Layer Forensic Inspection Architecture
+- **Layer 1: Cryptographic Integrity** &rarr; Validates ECDSA P-256 ASN.1 signature against registered public keys (`kid`).
+- **Layer 2: Structural Diff & Heatmap** &rarr; Native OpenCV SSIM comparison against the immutable 300 DPI vector snapshot; pinpoints tampered coordinates in bright red.
+- **Layer 3: OCR & Semantic Matching** &rarr; Tesseract text extraction with Levenshtein fuzzy distance matching against canonical fields.
+- **Layer 4: Forensic Metadata Inspection** &rarr; Detects Adobe Photoshop, Canva, GIMP software signatures, timestamp discrepancies, and font modifications.
+
+### Slide 5: The 6 Distinct Forensic Verdicts
+| Verdict | Visual Badge | Forensic Definition |
+| :--- | :--- | :--- |
+| **GENUINE** | Green Shield | 100% Cryptographic Match + 0.00 Pixel Diff |
+| **ALTERED** | Red Crosshair | Valid record, but name/grade modified (Heatmap highlights edit) |
+| **GENUINE COPY**| Cyan Shield | Real certificate compressed/screenshot (100% fields match) |
+| **FORGED** | Amber Warning | Stolen QR code or fabricated certificate |
+| **REVOKED** | Dark Badge | Revoked by issuing authority with cryptographic reason |
+| **UNVERIFIABLE**| Gray Discard | Non-accredited issuer (Zero false accusations; shows suspicion signals) |
+
+### Slide 6: Product Features — Issuer Console & Bulk Engine
+- **Single Issuance Wizard:** 10 diverse pre-built vector certificate templates with real-time live preview.
+- **Drag-and-Drop Bulk Issuance:** Upload Excel/CSV with 1,000+ recipients, schema validation, batch signing, and 1-click ZIP package download.
+- **Institutional Branding Studio:** Custom logos, official seals, and authorized digital signatures.
+- **Instant Revocation:** Revoke compromised credentials with immediate propagation across the cryptographic directory.
+
+### Slide 7: Complete 10-Template Library Catalog
+- **Academic:** `tpl_academic_01` (Degree), `tpl_academic_landscape` (Honours/Transcript), `tpl_marksheet_01` (Grade Report).
+- **Corporate:** `tpl_experience_01` (Relieving Letter), `tpl_intern_01` (Internship Completion).
+- **Recognition:** `tpl_appreciation_01` (Excellence Award), `tpl_training_01` (Training Certificate).
+- **Competitions:** `tpl_hack_part_01` (Hackathon Participant), `tpl_hack_win_01` (Hackathon Winner), `tpl_work_01` (Bootcamp Certificate).
+
+### Slide 8: Technical Architecture & Production Stack
+- **Frontend:** React 18, Vite 5, TailwindCSS, Framer Motion (Deployed on Vercel Global Edge CDN).
+- **Backend:** Unified Python 3.11.9 FastAPI + Uvicorn ASGI Server (Deployed on Render).
+- **Database:** Supabase PostgreSQL 15 with dedicated Threaded Connection Pooling.
+- **Edge Reverse Proxy (`vercel.json`):** Zero-CORS edge proxying routing `/api/*` and `/static/*` directly to Render.
+- **Vision & Vector Engine:** OpenCV (`cv2`), ReportLab 4.x, PyMuPDF (`fitz`), Tesseract OCR.
+
+### Slide 9: Cryptographic Protocol Deep-Dive
+- Diagram explaining:
+  $$\text{Fields} \xrightarrow{\text{Canonicalize}} \text{fields\_hash} \xrightarrow{+ \text{file\_hash}} \text{Manifest} \xrightarrow{\operatorname{Sign}_{K_{priv}}} \text{ECDSA Signature}$$
+- Show that QR payload carries content signature (`sig_content`) while database stores record signature (`sig_record`), completely avoiding circular hashing traps!
+
+### Slide 10: Performance, Testing & Benchmarks
+- **Evaluation Dataset:** 40 labelled test documents (Genuine, Compressed, Grade Altered, Name Altered, Forged QR, Revoked, Unregistered).
+- **Test Results:** **100% Classification Accuracy** &middot; **0 False Alarms**.
+- **Speed:** Full 4-layer multi-engine verification runs in **under 1.8 seconds**.
+
+### Slide 11: Competitive Advantage & Differentiation
+| Feature | Traditional Platforms | Evidentia |
+| :--- | :--- | :--- |
+| **Verification Logic** | Simple link redirection | 4-Layer Forensic Engine |
+| **Visual Tamper Localization**| None | Pixel-level Red Heatmap Overlay |
+| **Handling Screenshots** | Falsely marks as fake | Classified as GENUINE COPY |
+| **AI Integration** | Black-box LLM decision (hallucinates) | Deterministic Rules + Advisory Semantic Explanations |
+| **Issuance Speed** | Manual single entry | Batch Excel/CSV + Instant ZIP export |
+
+### Slide 12: Conclusion, Live Demo & Roadmap
+- **Roadmap:** Mobile verification app (React Native), Zero-Knowledge Proofs for selective privacy disclosure, Institutional HSM integration (AWS KMS).
+- **Call to Action:** Try the live app now at `https://evidentia-web.vercel.app`.
+- **Team Credits & Open-Source Acknowledgments.**
+
