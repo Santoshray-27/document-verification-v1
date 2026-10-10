@@ -115,16 +115,36 @@ Unlike naive verification tools that only check a QR link or hash, Evidentia imp
   - `/static/(.*)` &rarr; `https://evidentia-api-ig4f.onrender.com/static/$1`
   - Eliminates all CORS issues and enables same-origin header delivery.
 
-### Backend Architecture
-- **Framework:** FastAPI on Python 3.11.9, Uvicorn ASGI server.
-- **Hosting:** **Render** (`https://evidentia-api-ig4f.onrender.com`).
-- **Database:** **Supabase PostgreSQL 15** with threaded connection pooling (`psycopg2-binary`).
-- **Cryptographic Engine:** `cryptography` library (ECDSA `SECP256R1` + SHA-256), `PyJWT`, `bcrypt`.
-- **Vision & Document Generation:**
-  - `reportlab` 4.x: Deterministic vector PDF generation.
-  - `fitz` (PyMuPDF): High-fidelity PDF rendering and metadata extraction.
-  - `cv2` (`opencv-python-headless`): Native SSIM, image alignment, and heatmap synthesis.
-  - `pytesseract`: Optical character recognition.
+### Detailed Component-by-Component Tech Stack
+
+| Layer | Technology | Version / Specifications | Role & Architecture Details |
+| :--- | :--- | :--- | :--- |
+| **Frontend Framework** | **React** | `18.2.0` | High-performance Single Page Application (SPA), componentized design. |
+| **Build Tool & Bundler** | **Vite** | `5.0.x` | Sub-second HMR local builds, tree-shaking, static asset chunk optimization. |
+| **Styling & Design System** | **TailwindCSS** | `3.4.x` | Technical neo-brutalist UI system, custom tokens (`ink`, `surface`, `line`, `amber-500`). |
+| **Motion & Micro-interactions** | **Framer Motion** | `11.x` | Smooth state transitions, scanning animations, dynamic status badge transitions. |
+| **Icons & Visual Language** | **Lucide React** | `0.344.x` | Unified SVG iconography across verification statuses, security seals, and actions. |
+| **Client-Side Data Ingestion** | **XLSX (SheetJS)** | `0.18.5` | In-browser Excel (`.xlsx`, `.xls`) and CSV parsing with schema validation for Bulk Issuance. |
+| **Network Client** | **Axios** | `1.6.x` | Normalized error interceptor handling both FastAPI `{detail}` and Node `{error}` schemas. |
+| **Edge & Static Hosting** | **Vercel** | Edge Network | Fast Global CDN deployment with custom reverse proxy rewrite rules in `vercel.json`. |
+| **Unified API Server** | **FastAPI** | `0.110+` (Python 3.11.9) | Async ASGI REST engine with automated OpenAPI specs and sub-millisecond route dispatch. |
+| **ASGI Server Engine** | **Uvicorn** | `0.28+` | Production ASGI web server running with multi-worker support. |
+| **Relational Database** | **Supabase PostgreSQL** | `15.x` | Hosted cloud PostgreSQL with pooled SSL connections (`aws-0-ap-northeast-2`). |
+| **Database Driver & Pooling** | **Psycopg2-Binary** | `2.9.9` | Threaded connection pool (`ThreadedConnectionPool`) with `RealDictCursor` for zero-overhead JSON querying. |
+| **Asymmetric Cryptography** | **Cryptography** | `42.x` | Industry-grade ECDSA P-256 (`SECP256R1`) signing, SHA-256 hashing, ASN.1 DER formatting. |
+| **Session & Token Auth** | **PyJWT** | `2.8.x` | High-entropy HS256 authentication tokens with role and issuer payload claims. |
+| **Password Security** | **Bcrypt** | `4.1.x` | Salting and hashing with 72-byte safe boundary truncation. |
+| **Vector PDF Synthesizer** | **ReportLab** | `4.1.x` | Deterministic vector PDF rendering with custom Flowables, CIDFonts, vector borders, dynamic QRs. |
+| **PDF Extraction & Inspection** | **PyMuPDF (fitz)** | `1.23.x` | 300 DPI high-res Page 1 vector snapshot rendering, font extraction, and embedded text analysis. |
+| **Computer Vision Diff Engine** | **OpenCV (`opencv-python-headless`)** | `4.9.x` | Mathematical Structural Similarity (SSIM), Gaussian blur, contour bounding boxes, and heatmap generation. |
+| **OCR Text Extraction** | **Tesseract OCR** | `pytesseract 0.3.10` | Optical character recognition on uploaded images/scans with Levenshtein fuzzy string distance matching. |
+| **QR Code Engine** | **OpenCV QRCodeDetector / PyZBar** | Multi-engine | Real-time QR extraction from PDF pages and camera video streams. |
+| **Cloud API Hosting** | **Render** | Native Web Service | Linux containerized hosting with persistent storage mounts and automatic Git branch deployments. |
+
+### Architectural Data Flow & Inter-Process Communication
+1. **Zero-CORS Reverse Proxying**: The browser talks to `evidentia-web.vercel.app`. All calls matching `/api/*` and `/static/*` are transparently proxied at Vercel's edge to `evidentia-api-ig4f.onrender.com`.
+2. **Persistent Relational State**: FastAPI backend reuses persistent SSL database connections against Supabase via a dedicated Threaded Connection Pool, eliminating SSL handshake latency on high-frequency verification lookups.
+3. **In-Process Forensic Processing**: Document rendering, vector snapshot generation, cryptographic signing, SSIM vision diffing, and OCR extraction occur in-process inside the Python runtime without inter-service RPC overhead.
 
 ---
 
