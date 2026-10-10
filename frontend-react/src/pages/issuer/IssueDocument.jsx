@@ -276,30 +276,48 @@ export default function IssueDocument() {
         issue_date: form.issue_date,
       };
 
-      const { data } = await api.post('/issue/start', {
+      const res = await api.post('/issue/start', {
         doc_type: currentTemplate.id,
         template_id: currentTemplate.id,
         fields: payloadFields,
         expires_at: form.expires_at || null,
       });
+
+      const data = res?.data;
+      if (!data?.job_id) {
+        throw new Error(data?.message || 'Failed to start issuance job');
+      }
+
+      // If backend already completed synchronously and returned result immediately
+      if (data.status === 'done' && data.result) {
+        setJob(data);
+        setResult(data.result);
+        setPolling(false);
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        return;
+      }
+
       poll(data.job_id);
     } catch (err) {
-      setError(errMsg(err));
+      console.error('Issuance submit failed:', err);
+      setError(errMsg(err, 'Failed to initialize document issuance. Please verify connection.'));
       setPolling(false);
     }
   };
 
   const poll = async (jobId) => {
+    let consecutiveNetworkErrors = 0;
     for (let i = 0; i < 240; i++) {
       try {
         const { data } = await api.get(`/issue/jobs/${jobId}`);
+        consecutiveNetworkErrors = 0;
         setJob(data);
         if (data.status === 'done') {
           setTimeout(() => {
             setResult(data.result);
             setPolling(false);
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-          }, 1200);
+          }, 600);
           return;
         }
         if (data.status === 'failed') {
@@ -308,11 +326,16 @@ export default function IssueDocument() {
           return;
         }
       } catch (err) {
-        setError(errMsg(err));
-        setPolling(false);
-        return;
+        consecutiveNetworkErrors++;
+        console.warn(`Poll attempt ${i} error (count ${consecutiveNetworkErrors}):`, err?.message);
+        // Only terminate if 6 consecutive network failures occur (3+ seconds sustained downtime)
+        if (consecutiveNetworkErrors >= 6) {
+          setError(errMsg(err, 'Lost connection while processing issuance.'));
+          setPolling(false);
+          return;
+        }
       }
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 600));
     }
     setError('Issuing operation timed out');
     setPolling(false);
@@ -1031,11 +1054,33 @@ function SuccessCard({ result, onClose }) {
               VIEW RECORD
             </button>
           </Link>
-          <a href={assetUrl(result.pdf_url)} download className="flex-1">
-            <button className="w-full py-3 bg-ink text-bg font-mono font-bold text-[11px] uppercase border border-ink shadow-hard-sm hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none transition-all">
-              DOWNLOAD PDF
-            </button>
-          </a>
+          <button 
+            onClick={async () => {
+              const url = assetUrl(result.pdf_url);
+              try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Download failed');
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = `${result.fields?.certificate_number || result.doc_id}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                  window.URL.revokeObjectURL(blobUrl);
+                  document.body.removeChild(a);
+                }, 1000);
+              } catch (e) {
+                // Fallback to direct navigation / new tab
+                window.open(url, '_blank');
+              }
+            }}
+            className="flex-1 py-3 bg-ink text-bg font-mono font-bold text-[11px] uppercase border border-ink shadow-hard-sm hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none transition-all"
+          >
+            DOWNLOAD PDF
+          </button>
         </div>
         <button onClick={onClose} className="w-full mt-6 py-3 text-ink-muted font-mono text-[10px] uppercase hover:text-ink hover:underline">
           ISSUE ANOTHER
