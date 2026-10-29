@@ -1,4 +1,4 @@
-# Agnitia — *Proof in Every Pixel*
+# Evidentia  — *Proof in Every Pixel*
 
 **Secure Digital Document Verification Platform.** Check if a document is real, changed or fake.
 
